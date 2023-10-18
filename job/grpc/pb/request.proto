@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package buDing;
+
+import "google/protobuf/empty.proto";
+
+option go_package = '../to';
+option java_package = "com.buding.job.grpc.to";
+option java_multiple_files = true;
+
+service Service {
+    rpc dispatch (Request) returns (google.protobuf.Empty); //用户列表
+}
+
+message Request {
+    string serviceId = 1;
+    int64 callbackId = 3;
+}
