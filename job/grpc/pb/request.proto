@@ -8,8 +8,8 @@ option go_package = '../to';
 option java_package = "com.buding.job.grpc.to";
 option java_multiple_files = true;
 
-service Service {
-    rpc dispatch (Request) returns (google.protobuf.Empty); //用户列表
+service Server {
+    rpc dispatch (Request) returns (google.protobuf.Empty); //调度
 }
 
 message Request {
