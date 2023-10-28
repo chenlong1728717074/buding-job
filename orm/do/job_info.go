@@ -2,13 +2,17 @@ package do
 
 import "buding-job/orm"
 
+func init() {
+	orm.DB.AutoMigrate(&JobInfoDo{})
+}
+
 type JobInfoDo struct {
 	orm.BaseModel
 	ManageId       int64
 	JobName        string `gorm:"type:varchar(64);comment:工作名称"`
 	JobDescription string `gorm:"type:varchar(256);comment:描述"`
-	JobParams      string `gorm:"type:varchar(256);comment:参数"`
 	JobHandler     string `gorm:"type:varchar(64);comment:handler"`
+	JobParams      string `gorm:"type:varchar(256);comment:参数"`
 	JobType        int32  `gorm:"default:1;comment:工作类型 1:cron/2:固定时间"`
 	Cron           string `gorm:"type:varchar(64);comment:cron表达式"`
 	JobInterval    int32  `gorm:"default:0;comment:间隔时间 单位:s"`

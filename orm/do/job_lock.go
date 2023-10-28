@@ -1,5 +1,9 @@
 package do
 
+func init() {
+
+}
+
 type JobLockDo struct {
 	Id int64 `gorm:"primary_key;auto_increment:false"`
 }

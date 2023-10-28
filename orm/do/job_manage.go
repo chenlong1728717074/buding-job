@@ -2,6 +2,10 @@ package do
 
 import "buding-job/orm"
 
+func init() {
+
+}
+
 type JobManagementDo struct {
 	orm.BaseModel
 	AppName string

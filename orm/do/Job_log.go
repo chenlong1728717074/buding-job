@@ -5,6 +5,10 @@ import (
 	"time"
 )
 
+func init() {
+
+}
+
 type JobLogDo struct {
 	orm.BaseModel
 	ManageId             int64      `gorm:"column:manage_id;comment:管理器id"`

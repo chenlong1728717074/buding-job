@@ -4,6 +4,10 @@ import (
 	"buding-job/orm"
 )
 
+func init() {
+
+}
+
 type UserDo struct {
 	orm.BaseModel
 	UserName string `gorm:"type:varchar(100);"`

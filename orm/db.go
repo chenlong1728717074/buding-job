@@ -61,11 +61,11 @@ func dataSource(config dbConfig) (gorm.Dialector, error) {
 	case "postgres":
 		dataBase = postgres.Open(config.setting)
 	case "sqlite":
-		dataBase = sqlite.Open("gorm.db")
+		dataBase = sqlite.Open(config.setting)
 	case "sqlserver":
-		dataBase = sqlserver.Open("gorm.db")
+		dataBase = sqlserver.Open(config.setting)
 	case "clickhouse":
-		dataBase = clickhouse.Open("gorm.db")
+		dataBase = clickhouse.Open(config.setting)
 	default:
 		return nil, errors.New("no suitable data source matching")
 	}
