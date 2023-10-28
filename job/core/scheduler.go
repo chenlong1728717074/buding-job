@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-type Job struct {
+type Scheduler struct {
 	Id            int64
 	Cron          string
 	JobHandle     string
@@ -17,8 +17,8 @@ type Job struct {
 	Retry         int32
 }
 
-func NewJob(do do.JobInfoDo) *Job {
-	job := &Job{
+func NewJob(do do.JobInfoDo) *Scheduler {
+	job := &Scheduler{
 		Id:            do.Id,
 		Cron:          do.Cron,
 		JobHandle:     do.JobHandler,

@@ -10,7 +10,7 @@ var jobSchedule *jobScheduleHandle
 
 type jobScheduleHandle struct {
 	lock    sync.RWMutex
-	jobList []*core.Job
+	jobList []*core.Scheduler
 	JobScan chan interface{}
 }
 
@@ -22,7 +22,7 @@ func NewJobScheduleHandle() {
 }
 func (job *jobScheduleHandle) Start() {
 	//todo 获取数据
-	job.jobList = make([]*core.Job, 10)
+	job.jobList = make([]*core.Scheduler, 10)
 	job.start()
 }
 
@@ -49,12 +49,12 @@ func (job *jobScheduleHandle) start() {
 		}
 	}
 }
-func Execute(job *core.Job, schedule bool) {
+func Execute(job *core.Scheduler, schedule bool) {
 	if schedule {
 		//todo 如果属于调度,那么就修改数据
 	}
 	go execute(job)
 }
-func execute(job *core.Job) {
+func execute(job *core.Scheduler) {
 
 }

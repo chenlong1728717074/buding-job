@@ -3,7 +3,11 @@ package orm
 import (
 	"errors"
 	"fmt"
+	"gorm.io/driver/clickhouse"
 	"gorm.io/driver/mysql"
+	"gorm.io/driver/postgres"
+	"gorm.io/driver/sqlite"
+	"gorm.io/driver/sqlserver"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"log"
@@ -21,22 +25,10 @@ type dbConfig struct {
 }
 
 func init() {
-
-	var err error
-	userName := "root"
-	passWorld := "990927"
-	addr := "127.0.0.1"
-	port := "3306"
-	table := "xll-job"
-	url := "charset=utf8mb4&parseTime=True&loc=Local"
-	setting := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?%s", userName, passWorld, addr, port, table, url)
-	fmt.Println(setting)
-	source, err := dataSource(dbConfig{
-		name:    "mysql",
-		setting: setting,
-	})
+	setting := buildDbConfig()
+	source, err := dataSource(setting)
 	if err != nil {
-		panic(source)
+		panic(err)
 	}
 	DB, err = gorm.Open(source,
 		&gorm.Config{Logger: getLogger(),
@@ -45,13 +37,35 @@ func init() {
 	if err != nil {
 		panic("连接失败:" + err.Error())
 	}
-	//DB = DB.Scopes(WithDeletedFalse())
 }
+
+func buildDbConfig() dbConfig {
+	userName := "root"
+	passWorld := "990927"
+	addr := "127.0.0.1"
+	port := "3306"
+	table := "buding-job"
+	url := "charset=utf8mb4&parseTime=True&loc=Local"
+	setting := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?%s", userName, passWorld, addr, port, table, url)
+	return dbConfig{
+		name:    "mysql",
+		setting: setting,
+	}
+}
+
 func dataSource(config dbConfig) (gorm.Dialector, error) {
 	var dataBase gorm.Dialector
 	switch config.name {
 	case "mysql":
 		dataBase = mysql.Open(config.setting)
+	case "postgres":
+		dataBase = postgres.Open(config.setting)
+	case "sqlite":
+		dataBase = sqlite.Open("gorm.db")
+	case "sqlserver":
+		dataBase = sqlserver.Open("gorm.db")
+	case "clickhouse":
+		dataBase = clickhouse.Open("gorm.db")
 	default:
 		return nil, errors.New("no suitable data source matching")
 	}
