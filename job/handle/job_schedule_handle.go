@@ -40,12 +40,10 @@ func (job *jobScheduleHandle) start() {
 			}
 			end := time.Now()
 			consum := end.UnixMilli() - start.UnixMilli()
-
 			if consum < 1000 {
-				desiredSleepTime := 1000000 - consum
-				time.Sleep(time.Duration(desiredSleepTime))
+				desiredSleepTime := 1000 - consum
+				time.Sleep(time.Duration(desiredSleepTime) * time.Millisecond)
 			}
-
 		}
 	}
 }
