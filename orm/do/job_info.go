@@ -18,7 +18,7 @@ type JobInfoDo struct {
 	JobParams       string     `gorm:"type:varchar(256);comment:参数"`
 	JobType         int32      `gorm:"default:1;comment:工作类型 1:cron/2:固定时间"`
 	Cron            string     `gorm:"type:varchar(64);comment:cron表达式"`
-	JobInterval     int32      `gorm:"default:0;comment:间隔时间 单位:s"`
+	JobInterval     int64      `gorm:"default:0;comment:间隔时间 单位:s"`
 	NextTime        *time.Time `gorm:"comment:下次执行时间"`
 	Timeout         int32      `gorm:"default:600;comment:超时时间,默认十分钟"`
 	ExecuteType     int32      `gorm:"default:1;comment:调度类型 1:单机/2:广播"`

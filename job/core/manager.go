@@ -42,3 +42,11 @@ func (manager *JobManager) UpdateJob() {
 	manager.lock.RLock()
 	defer manager.lock.RUnlock()
 }
+
+func (manager *JobManager) Routing(strategy RouterStrategy) *Instance {
+	commonRouter, ok := manager.Router.(*CommonRouter)
+	if ok {
+		return commonRouter.GetStrategyInstance(strategy)
+	}
+	return manager.Router.GetInstance()
+}

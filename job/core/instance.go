@@ -17,3 +17,15 @@ func NewInstance(addr string, jobManagerId int64, jobManagerName string) *Instan
 		RegisterTime:   time.Now(),
 	}
 }
+
+func (instance *Instance) FlushRegisterTime() {
+	instance.RegisterTime = time.Now()
+}
+
+func (instance *Instance) Equals(addr string) bool {
+	return instance.Addr == addr
+}
+
+func (instance *Instance) Lapse(lapseTime time.Time) bool {
+	return instance.RegisterTime.After(lapseTime)
+}
