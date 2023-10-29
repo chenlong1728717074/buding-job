@@ -1,6 +1,8 @@
 package job
 
 import (
+	"buding-job/job/grpc/service"
+	"buding-job/job/grpc/to"
 	"fmt"
 	"google.golang.org/grpc"
 	"log"
@@ -15,9 +17,11 @@ func NewJobApp() *JobApp {
 	return &JobApp{
 		grpcServer: grpc.NewServer(),
 	}
+
 }
 
 func (app *JobApp) Start() {
+	app.registerServer()
 	app.startGrpc()
 }
 
@@ -32,7 +36,12 @@ func (app *JobApp) startGrpc() {
 			log.Fatalf("Grpc Service startup failed:%s", err.Error())
 		}
 	}()
+	log.Println("Grpc server startup...")
 }
 func (app *JobApp) Stop() {
 	app.grpcServer.Stop()
+}
+
+func (app *JobApp) registerServer() {
+	to.RegisterServerServer(app.grpcServer, service.NewServer())
 }

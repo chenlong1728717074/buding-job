@@ -17,6 +17,10 @@ type Server struct {
 	to.UnimplementedServerServer
 }
 
+func NewServer() *Server {
+	return &Server{}
+}
+
 func (*Server) Register(ctx context.Context, req *to.RegisterRequest) (*emptypb.Empty, error) {
 	var m do.JobManagementDo
 	orm.DB.First(&m, req.GetJobManagerId())
