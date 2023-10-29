@@ -33,3 +33,6 @@ func (app *JobApp) startGrpc() {
 		}
 	}()
 }
+func (app *JobApp) Stop() {
+	app.grpcServer.Stop()
+}

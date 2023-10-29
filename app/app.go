@@ -19,6 +19,7 @@ type BuDingJobApp struct {
 func NewBuDingJobApp() *BuDingJobApp {
 	return &BuDingJobApp{
 		webApp: web.NewWebApp(),
+		jobApp: job.NewJobApp(),
 	}
 }
 func (app *BuDingJobApp) Start() {
@@ -31,5 +32,6 @@ func (app *BuDingJobApp) Start() {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	app.webApp.Stop(ctx)
+	app.jobApp.Stop()
 	log.Println("Server exiting")
 }
