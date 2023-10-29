@@ -11,12 +11,12 @@ type JobManager struct {
 	lock    sync.RWMutex
 }
 
-func NewJobManager(id int64, appName string, name string) *JobManager {
+func NewJobManager(id int64, appName string, name string, strategy RouterStrategy) *JobManager {
 	var manager = JobManager{
 		Id:      id,
 		AppName: appName,
 		Name:    name,
-		Router:  NewFirstRouter(),
+		Router:  NewStrategyRouter(strategy),
 		JobList: make(map[int64]*Scheduler),
 		lock:    sync.RWMutex{},
 	}
@@ -41,7 +41,4 @@ func (manager *JobManager) RemoveJob() {
 func (manager *JobManager) UpdateJob() {
 	manager.lock.RLock()
 	defer manager.lock.RUnlock()
-}
-func (manager *JobManager) RouterInstance() {
-	manager.Router.GetInstance()
 }

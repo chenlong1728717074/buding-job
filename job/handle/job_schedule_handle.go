@@ -11,6 +11,7 @@ var jobSchedule *jobScheduleHandle
 type jobScheduleHandle struct {
 	lock    sync.RWMutex
 	jobList []*core.Scheduler
+
 	JobScan chan interface{}
 }
 
@@ -24,6 +25,9 @@ func (job *jobScheduleHandle) Start() {
 	//todo 获取数据
 	job.jobList = make([]*core.Scheduler, 10)
 	job.start()
+}
+func (job *jobScheduleHandle) Stop() {
+
 }
 
 func (job *jobScheduleHandle) start() {
