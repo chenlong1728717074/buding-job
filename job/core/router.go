@@ -45,7 +45,11 @@ type CommonRouter struct {
 }
 
 func NewCommonRouter() *CommonRouter {
-	return nil
+	router := &CommonRouter{}
+	router.lock = sync.RWMutex{}
+	router.instanceList = make([]*Instance, 0)
+	router.next = 0
+	return router
 }
 
 func (router *CommonRouter) GetInstance() *Instance {
@@ -117,7 +121,6 @@ func (router *FirstRouter) GetInstance() *Instance {
 
 // RandomRouter 随机路由器
 type RandomRouter struct {
-	next int32
 	abstractRouter
 }
 
@@ -133,6 +136,7 @@ func (router *RandomRouter) GetInstance() *Instance {
 
 // PollingRouter 轮询路由器
 type PollingRouter struct {
+	next int32
 	abstractRouter
 }
 

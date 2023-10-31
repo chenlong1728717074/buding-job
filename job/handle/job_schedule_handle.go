@@ -34,25 +34,27 @@ func (job *jobScheduleHandle) Stop() {
 }
 
 func (job *jobScheduleHandle) start() {
-	for {
-		select {
-		case <-job.JobScan:
-			return
-		default:
-			start := time.Now()
-			for _, c := range job.jobList {
-				if c.NextTime.Before(start) {
-					Execute(c, true)
+	go func() {
+		for {
+			select {
+			case <-job.JobScan:
+				return
+			default:
+				start := time.Now()
+				for _, c := range job.jobList {
+					if c.NextTime.Before(start) {
+						Execute(c, true)
+					}
+				}
+				end := time.Now()
+				consum := end.UnixMilli() - start.UnixMilli()
+				if consum < 1000 {
+					desiredSleepTime := 1000 - consum
+					time.Sleep(time.Duration(desiredSleepTime) * time.Millisecond)
 				}
 			}
-			end := time.Now()
-			consum := end.UnixMilli() - start.UnixMilli()
-			if consum < 1000 {
-				desiredSleepTime := 1000 - consum
-				time.Sleep(time.Duration(desiredSleepTime) * time.Millisecond)
-			}
 		}
-	}
+	}()
 }
 func Execute(job *core.Scheduler, schedule bool) {
 	if schedule {

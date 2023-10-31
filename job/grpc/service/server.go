@@ -23,11 +23,11 @@ func NewServer() *Server {
 
 func (*Server) Register(ctx context.Context, req *to.RegisterRequest) (*emptypb.Empty, error) {
 	var m do.JobManagementDo
-	orm.DB.First(&m, req.GetJobManagerId())
+	orm.DB.Where("name = ?", req.JobManager).Find(&m)
 	if m.Id == 0 {
 		return nil, errors.New("JobManagement NOT FOUND")
 	}
-	handle.JobManagerProcessor.RegisterInstance(core.NewInstance(req.ServiceAddr, req.JobManagerId, req.JobManagerName))
+	handle.JobManagerProcessor.RegisterInstance(core.NewInstance(req.ServiceAddr, m.Id, m.AppName))
 	return &emptypb.Empty{}, nil
 }
 
