@@ -167,7 +167,12 @@ func (h *JobManagerHandle) flush() {
 	//重新分配服务
 	for k := range h.jobManagerMap {
 		manager := h.jobManagerMap[k]
-		manager.Router.ReplaceInstance(temp[k])
+		if value, ok := temp[k]; ok {
+			manager.Router.ReplaceInstance(value)
+		} else {
+			//todo 之后需要优化(Route接口添加一个clean方法)
+			manager.Router.ReplaceInstance(make([]*core.Instance, 0))
+		}
 	}
 	endTime := time.Now().UnixNano() / 1000000
 	log.Printf("service node refresh completed[刷新完成]:%d,time consuming:%d", endTime, endTime-startTime)
