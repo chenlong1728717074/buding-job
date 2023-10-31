@@ -5,7 +5,7 @@ import (
 )
 
 func init() {
-
+	orm.DB.AutoMigrate(&UserDo{})
 }
 
 type UserDo struct {

@@ -16,8 +16,7 @@ service Server {
 
 message RegisterRequest {
     string serviceAddr = 1;
-    int64 jobManagerId = 2;
-    string jobManagerName = 3;
+    string jobManager = 2;
 }
 
 service Job {

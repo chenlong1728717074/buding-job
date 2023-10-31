@@ -3,15 +3,15 @@ package do
 import "buding-job/orm"
 
 func init() {
-
+	orm.DB.AutoMigrate(&UserManagerDo{})
 }
 
-type UserManager struct {
+type UserManagerDo struct {
 	orm.BaseModel
 	UserId    int64
 	ManagerId int64
 }
 
-func (UserManager) TableName() string {
+func (UserManagerDo) TableName() string {
 	return "tb_user_manager"
 }
