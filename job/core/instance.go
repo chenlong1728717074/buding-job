@@ -22,8 +22,8 @@ func (instance *Instance) FlushRegisterTime() {
 	instance.RegisterTime = time.Now()
 }
 
-func (instance *Instance) Equals(addr string) bool {
-	return instance.Addr == addr
+func (instance *Instance) Equals(newInstance *Instance) bool {
+	return instance.Addr == newInstance.Addr
 }
 
 func (instance *Instance) Lapse(lapseTime time.Time) bool {

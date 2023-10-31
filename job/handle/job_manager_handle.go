@@ -1,11 +1,18 @@
 package handle
 
 import (
+	"buding-job/common/constant"
 	"buding-job/job/core"
+	"buding-job/orm"
+	"buding-job/orm/do"
 	"log"
 	"sync"
 	"time"
 )
+
+func init() {
+	JobManagerProcessor = NewJobManagerHandle()
+}
 
 var JobManagerProcessor *JobManagerHandle
 
@@ -24,12 +31,60 @@ type JobManagerHandle struct {
 	instanceLock sync.RWMutex
 }
 
-func NewJobManagerHandle() {
-
+func NewJobManagerHandle() *JobManagerHandle {
+	return &JobManagerHandle{
+		jobManagerMap: make(map[int64]*core.JobManager),
+		jobList:       make([]*core.Scheduler, 0),
+		jobLock:       sync.RWMutex{},
+		flushDone:     make(chan struct{}),
+		instanceList:  make([]*core.Instance, 0),
+		registerDone:  make(chan struct{}),
+		instanceChan:  make(chan *core.Instance, 100),
+		instanceLock:  sync.RWMutex{},
+	}
 }
 
 func (h *JobManagerHandle) Start() {
+	h.init()
 	h.serverInspect()
+}
+
+func (h *JobManagerHandle) init() {
+	//这一步操作后期放监视器 定时检查锁
+	if err := orm.DB.Exec(constant.DeleteLock).Error; err != nil {
+		//log.Fatal("Failed to delete data: ", err)
+	}
+	//加载任务管理器
+	var managers []do.JobManagementDo
+	orm.DB.Model(&do.JobManagementDo{}).Find(&managers)
+	//加载任务
+	h.loadJob(managers)
+	log.Printf("任务管理器加载成功,size=%d\n", len(h.jobManagerMap))
+}
+
+func (h *JobManagerHandle) loadJob(managers []do.JobManagementDo) {
+	for _, managementDo := range managers {
+		jobManager := core.NewJobManager(managementDo.Id, managementDo.Name, managementDo.AppName, core.RouterStrategy(managementDo.RoutingPolicy))
+		h.jobManagerMap[managementDo.Id] = jobManager
+		var jobs []do.JobInfoDo
+		orm.DB.Model(&do.JobInfoDo{}).Where(&do.JobInfoDo{ManageId: jobManager.Id}).Find(&jobs)
+		if len(jobs) == 0 {
+			continue
+		}
+		for _, infoDo := range jobs {
+			if infoDo.Enable {
+				scheduler := core.NewScheduler(&infoDo)
+				scheduler.Manager = jobManager
+				h.addScheduler(scheduler)
+			}
+		}
+	}
+}
+
+func (h *JobManagerHandle) addScheduler(scheduler *core.Scheduler) {
+	h.jobLock.Lock()
+	defer h.jobLock.Unlock()
+	h.jobList = append(h.jobList, scheduler)
 }
 
 func (h *JobManagerHandle) serverInspect() {
@@ -53,7 +108,7 @@ func (h *JobManagerHandle) serverInspect() {
 func (h *JobManagerHandle) RegisterInstance(instance *core.Instance) {
 	flag := true
 	for index := range h.instanceList {
-		if h.instanceList[index].Equals(instance.Addr) {
+		if h.instanceList[index].Equals(instance) {
 			h.instanceList[index].FlushRegisterTime()
 			flag = false
 			break
@@ -71,10 +126,21 @@ func (h *JobManagerHandle) addInstance(instance *core.Instance) {
 	h.instanceList = append(h.instanceList, instance)
 }
 
-func (h *JobManagerHandle) RemoveInstance() {
+func (h *JobManagerHandle) RemoveInstance(instance *core.Instance) {
 	h.instanceLock.Lock()
-	defer h.instanceLock.RUnlock()
-
+	defer h.instanceLock.Unlock()
+	var index int
+	var flag bool
+	for i := range h.instanceList {
+		if h.instanceList[i].Equals(instance) {
+			flag = true
+			index = i
+			break
+		}
+	}
+	if flag {
+		h.instanceList = append(h.instanceList[:index], h.instanceList[index+1:]...)
+	}
 }
 
 func (h *JobManagerHandle) flush() {

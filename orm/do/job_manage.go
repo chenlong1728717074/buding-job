@@ -3,7 +3,7 @@ package do
 import "buding-job/orm"
 
 func init() {
-
+	orm.DB.AutoMigrate(&JobManagementDo{})
 }
 
 type JobManagementDo struct {

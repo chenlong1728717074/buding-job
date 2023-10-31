@@ -23,6 +23,7 @@ func NewBuDingJobApp() *BuDingJobApp {
 	}
 }
 func (app *BuDingJobApp) Start() {
+	app.jobApp.Start()
 	app.webApp.Start()
 	log.Println("SERVER START SUCCESS")
 	quit := make(chan os.Signal)

@@ -3,6 +3,7 @@ package job
 import (
 	"buding-job/job/grpc/service"
 	"buding-job/job/grpc/to"
+	"buding-job/job/handle"
 	"fmt"
 	"google.golang.org/grpc"
 	"log"
@@ -17,10 +18,11 @@ func NewJobApp() *JobApp {
 	return &JobApp{
 		grpcServer: grpc.NewServer(),
 	}
-
 }
 
 func (app *JobApp) Start() {
+	handle.JobManagerProcessor.Start()
+	handle.JobSchedule.Start()
 	app.registerServer()
 	app.startGrpc()
 }

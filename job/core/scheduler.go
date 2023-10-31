@@ -10,12 +10,12 @@ type Scheduler struct {
 	JobHandle     string
 	Parser        TimeParser
 	NextTime      time.Time
-	Manager       string
+	Manager       *JobManager
 	RoutingPolicy int32
 	Retry         int32
 }
 
-func NewJob(info do.JobInfoDo) *Scheduler {
+func NewScheduler(info *do.JobInfoDo) *Scheduler {
 	job := &Scheduler{
 		Id: info.Id,
 		//Cron:          do.Cron,
@@ -25,12 +25,11 @@ func NewJob(info do.JobInfoDo) *Scheduler {
 	}
 	//时间解析器
 	job.setParser(info)
-	//job.manager
 	job.NextTime = job.Next(time.Now())
 	return job
 }
 
-func (scheduler *Scheduler) setParser(info do.JobInfoDo) {
+func (scheduler *Scheduler) setParser(info *do.JobInfoDo) {
 	if info.JobType == Cron {
 		scheduler.Parser = NewCronTimeParser(info.Cron)
 		return

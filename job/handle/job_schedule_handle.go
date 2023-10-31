@@ -6,7 +6,11 @@ import (
 	"time"
 )
 
-var jobSchedule *jobScheduleHandle
+var JobSchedule *jobScheduleHandle
+
+func init() {
+	JobSchedule = NewJobScheduleHandle()
+}
 
 type jobScheduleHandle struct {
 	lock    sync.RWMutex
@@ -15,15 +19,14 @@ type jobScheduleHandle struct {
 	JobScan chan interface{}
 }
 
-func NewJobScheduleHandle() {
-	jobSchedule = &jobScheduleHandle{
+func NewJobScheduleHandle() *jobScheduleHandle {
+	return &jobScheduleHandle{
 		lock:    sync.RWMutex{},
 		JobScan: make(chan interface{}),
 	}
 }
 func (job *jobScheduleHandle) Start() {
 	//todo 获取数据
-	job.jobList = make([]*core.Scheduler, 10)
 	job.start()
 }
 func (job *jobScheduleHandle) Stop() {
