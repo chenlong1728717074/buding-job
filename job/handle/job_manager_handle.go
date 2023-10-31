@@ -122,7 +122,7 @@ func (h *JobManagerHandle) RegisterInstance(instance *core.Instance) {
 
 func (h *JobManagerHandle) addInstance(instance *core.Instance) {
 	h.instanceLock.Lock()
-	defer h.instanceLock.RUnlock()
+	defer h.instanceLock.Unlock()
 	h.instanceList = append(h.instanceList, instance)
 }
 
@@ -152,7 +152,7 @@ func (h *JobManagerHandle) flush() {
 	newInstanceList := make([]*core.Instance, 0)
 	//获取所有存活的服务
 	for _, node := range h.instanceList {
-		if now.After(node.RegisterTime) {
+		if now.Before(node.RegisterTime) {
 			node.RegisterTime = time.Now()
 			newInstanceList = append(newInstanceList, node)
 		}
@@ -175,7 +175,7 @@ func (h *JobManagerHandle) flush() {
 		}
 	}
 	endTime := time.Now().UnixNano() / 1000000
-	log.Printf("service node refresh completed[刷新完成]:%d,time consuming:%d", endTime, endTime-startTime)
+	log.Printf("service node refresh completed[刷新完成]:%d,time consuming:%d,此次执行共刷新%d个实例", endTime, endTime-startTime, len(h.instanceList))
 }
 
 // 预留设定
