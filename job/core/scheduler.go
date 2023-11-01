@@ -11,6 +11,7 @@ type Scheduler struct {
 	Parser        TimeParser
 	NextTime      time.Time
 	Manager       *JobManager
+	ExecuteType   int32
 	RoutingPolicy int32
 	Retry         int32
 }
@@ -20,6 +21,7 @@ func NewScheduler(info *do.JobInfoDo) *Scheduler {
 		Id: info.Id,
 		//Cron:          do.Cron,
 		JobHandle:     info.JobHandler,
+		ExecuteType:   info.ExecuteType,
 		Retry:         info.Retry,
 		RoutingPolicy: info.RoutingPolicy,
 	}

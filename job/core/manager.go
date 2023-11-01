@@ -47,6 +47,11 @@ func (manager *JobManager) Routing(strategy RouterStrategy) *Instance {
 	commonRouter, ok := manager.Router.(*CommonRouter)
 	if ok {
 		return commonRouter.GetStrategyInstance(strategy)
+	} else {
+		return manager.Router.GetInstance()
 	}
-	return manager.Router.GetInstance()
+}
+
+func (manager *JobManager) Permission() bool {
+	return len(manager.Router.AllInstance()) > 0
 }

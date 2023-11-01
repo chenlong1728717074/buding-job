@@ -58,10 +58,19 @@ func (job *jobScheduleHandle) start() {
 }
 func Execute(job *core.Scheduler, schedule bool) {
 	if schedule {
-		//todo 如果属于调度,那么就修改数据
+		//todo 判断是否自动调度,如果属于调度,那么就修改数据
+		job.NextTime = job.Next(time.Now())
 	}
 	go execute(job)
 }
+
+// todo 没有设定故障转移逻辑
 func execute(job *core.Scheduler) {
+	//没有服务注册上去,不允许执行
+	if !job.Manager.Permission() {
+		return
+	}
+	// 1:单机/2:广播
+	//routing := job.Manager.Routing(core.RouterStrategy(job.RoutingPolicy))
 
 }

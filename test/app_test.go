@@ -16,3 +16,10 @@ func TestTime(t *testing.T) {
 	fmt.Println(now)
 	fmt.Println(now.Before(time.Now()))
 }
+func TestArr(t *testing.T) {
+	fmt.Println(len(getSince()))
+
+}
+func getSince() []int {
+	return nil
+}
