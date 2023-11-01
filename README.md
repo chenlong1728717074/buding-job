@@ -1,12 +1,19 @@
-# buding-job
+# <div style="text-align:center;"> <h1>buding-job(进行中)<h1></div>
 
-#### 介绍
-为作者xll-job重构版,之所以重构是因为xll-job包之间的依赖很混乱<br/>
-其次是因为使用了第三方robfig的cron库,这个库最近维护时间是三年前,不适合现在的逻辑，同时也很不方便<br/>
-改进后的buding-job采用了更为底层的cronexpr库来解析cron表达式,同时自己实现了定时扫描的逻辑<br/>
-之所以叫buding-job,是为了纪念本人养的第一条宠物狗,名字叫布丁
-<br/>
+<div style="text-align:center;">
+<h2>简介</h2>
+<h3>项目背景和说明</h3>
+<p>本项目是基于Golang的轻量级分布式定时任务调度平台,同时也是基于作者原来的xll-job重构</p>
+<p>重构的原因是原来的xll-job设计不合理，包的依赖混乱，其次是基于Robfig很久没有维护，同时也不适应当前设计</p>
+<p>重构的项目作者除参考xxl-job之外还参考了PowerJob的设计理念,再加上自己的设计，取长补短</p>
+<p>改进后的buding-job采用了更为底层的cronexpr库来解析cron表达式,同时自己实现了定时扫描的逻辑</p>
+<p>项目在原来的基础上进行了很多的改动，如改进型了路由模式，重新梳理启动流程，改进Grpc调度，同时也优化了大量的代码</p>
+<p>之所以重构的项目命名为buding-job,是为了纪念本人养的第一条宠物狗,名字叫布丁</p>
 <img alt="img.png" height="100" src="img/img.png" width="100"/>
+<h3>特性</h3>
+</div>
+
+
 
 ### 同类产品对比
 |       | QuartZ                        | xxl-job                          | BuDing-job            |
