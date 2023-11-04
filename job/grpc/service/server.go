@@ -23,7 +23,7 @@ func NewServer() *Server {
 
 func (*Server) Register(ctx context.Context, req *to.RegisterRequest) (*emptypb.Empty, error) {
 	var m do.JobManagementDo
-	orm.DB.Where("name = ?", req.JobManager).Find(&m)
+	orm.DB.Where("app_name = ?", req.JobManager).Find(&m)
 	if m.Id == 0 {
 		return nil, errors.New("JobManagement NOT FOUND")
 	}

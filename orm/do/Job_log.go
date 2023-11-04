@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-
+	orm.DB.AutoMigrate(&JobLogDo{})
 }
 
 type JobLogDo struct {
