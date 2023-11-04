@@ -40,12 +40,11 @@ func (job *jobTriggerHandle) Flush() {
 func (job *jobTriggerHandle) start() {
 	go func() {
 		for {
-			now := time.Now()
 			var timer *time.Timer
 			if JobManagerProcessor.Permission() {
 				timer = time.NewTimer(100000 * time.Hour)
 			} else {
-				timer = time.NewTimer(JobManagerProcessor.jobList[0].NextTime.Sub(now))
+				timer = time.NewTimer(JobManagerProcessor.GetJobList()[0].NextTime.Sub(time.Now()))
 			}
 			for {
 				select {
@@ -54,17 +53,23 @@ func (job *jobTriggerHandle) start() {
 					return
 				case <-job.FlushChan:
 					timer.Stop()
+					break
 				case <-timer.C:
 					start := time.Now()
-					for _, c := range JobManagerProcessor.GetJobList() {
-						if c.NextTime.After(start) {
+					list := JobManagerProcessor.GetJobList()
+					for _, c := range list {
+						if c.NextTime.After(start) || c.NextTime.IsZero() {
 							break
 						}
 						go JobExecute.Execute(c, true)
+						//这一部必须是同步操作
+						c.FlushTime()
 					}
 					end := time.Now()
 					consum := end.UnixMilli() - start.UnixMilli()
-					log.Printf("本次执行耗时%dms", consum)
+					log.Println("本次执行耗时", consum, "ms---->", time.Now(), "任务大小->", len(list))
+					JobManagerProcessor.flushSchedulerSort()
+					break
 				}
 				break
 			}

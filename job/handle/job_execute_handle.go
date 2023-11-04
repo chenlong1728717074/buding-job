@@ -41,10 +41,6 @@ func (jobExecute *jobExecuteHandle) Execute(job *core.Scheduler, schedule bool) 
 			jobExecute.doExecute(job, lockDo, run)
 		}
 	}
-	//刷新下次时间
-	if schedule {
-		job.FlushTime()
-	}
 }
 
 // 执行任务
@@ -138,7 +134,7 @@ func (jobExecute *jobExecuteHandle) permission(job *core.Scheduler) (*do.JobLock
 		Id:       job.Id,
 		LockTime: &now,
 	}
-	tx := orm.DB.Create(lock)
+	tx := orm.DB.Save(lock)
 	//加锁失败&&丢弃
 	if tx.RowsAffected == 0 && job.MisfireStrategy == 1 {
 		return nil, false, false
