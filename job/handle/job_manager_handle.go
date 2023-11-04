@@ -6,6 +6,7 @@ import (
 	"buding-job/orm"
 	"buding-job/orm/do"
 	"log"
+	"sort"
 	"sync"
 	"time"
 )
@@ -49,6 +50,18 @@ func (h *JobManagerHandle) Start() {
 	h.serverInspect()
 }
 
+func (h *JobManagerHandle) GetJobList() []*core.Scheduler {
+	h.jobLock.Lock()
+	defer h.jobLock.Unlock()
+	return h.jobList
+}
+
+func (h *JobManagerHandle) Permission() bool {
+	h.jobLock.Lock()
+	defer h.jobLock.Unlock()
+	return len(h.jobList) == 0 || h.jobList[0].NextTime.IsZero()
+}
+
 func (h *JobManagerHandle) init() {
 	//这一步操作后期放监视器 定时检查锁
 	if err := orm.DB.Exec(constant.DeleteLock).Error; err != nil {
@@ -59,6 +72,7 @@ func (h *JobManagerHandle) init() {
 	orm.DB.Model(&do.JobManagementDo{}).Find(&managers)
 	//加载任务
 	h.loadJob(managers)
+	h.flushSchedulerSort()
 	log.Printf("任务管理器加载成功,size=%d\n", len(h.jobManagerMap))
 }
 
@@ -75,34 +89,64 @@ func (h *JobManagerHandle) loadJob(managers []do.JobManagementDo) {
 			if infoDo.Enable {
 				scheduler := core.NewScheduler(&infoDo)
 				scheduler.Manager = jobManager
-				h.addScheduler(scheduler)
+				h.addScheduler(scheduler, false)
 			}
 		}
 	}
 }
 
-func (h *JobManagerHandle) addScheduler(scheduler *core.Scheduler) {
+func (h *JobManagerHandle) FlushScheduler() {
+	h.jobLock.Lock()
+	defer h.jobLock.Unlock()
+	h.jobManagerMap = make(map[int64]*core.JobManager)
+	h.jobList = make([]*core.Scheduler, 0)
+	h.instanceList = make([]*core.Instance, 0)
+	h.instanceChan = make(chan *core.Instance, 100)
+	h.init()
+}
+
+func (h *JobManagerHandle) flushSchedulerSort() {
+	sort.Sort(core.ByTime(h.jobList))
+}
+
+func (h *JobManagerHandle) AddScheduler(scheduler *core.Scheduler) {
+	h.addScheduler(scheduler, true)
+	JobSchedule.Flush()
+}
+
+func (h *JobManagerHandle) addScheduler(scheduler *core.Scheduler, flash bool) {
 	h.jobLock.Lock()
 	defer h.jobLock.Unlock()
 	h.jobList = append(h.jobList, scheduler)
+	if flash {
+		h.flushSchedulerSort()
+	}
 }
 
-func (h *JobManagerHandle) serverInspect() {
-	go func() {
-		log.Println("服务检查处理器已开启")
-		//睡十秒,等待服务注册
-		time.Sleep(time.Second * 10)
-		for {
-			select {
-			case <-h.flushDone:
-				log.Println("服务检查处理器已关闭....")
-				return
-			default:
-				go h.flush()
-				time.Sleep(time.Second * 30)
-			}
+func (h *JobManagerHandle) RemoveScheduler(scheduler *core.Scheduler) {
+	h.removeScheduler(scheduler, true)
+	JobSchedule.Flush()
+}
+
+func (h *JobManagerHandle) removeScheduler(scheduler *core.Scheduler, flash bool) {
+	h.jobLock.Lock()
+	defer h.jobLock.Unlock()
+
+	var index int
+	var flag bool
+	for i := range h.jobList {
+		if h.jobList[i].Id == scheduler.Id {
+			flag = true
+			index = i
+			break
 		}
-	}()
+	}
+	if flag {
+		h.jobList = append(h.jobList[:index], h.jobList[index+1:]...)
+	}
+	if flash {
+		h.flushSchedulerSort()
+	}
 }
 
 func (h *JobManagerHandle) RegisterInstance(instance *core.Instance) {
@@ -143,7 +187,24 @@ func (h *JobManagerHandle) RemoveInstance(instance *core.Instance) {
 	}
 }
 
-func (h *JobManagerHandle) flush() {
+func (h *JobManagerHandle) serverInspect() {
+	go func() {
+		log.Println("服务检查处理器已开启")
+		//睡十秒,等待服务注册
+		time.Sleep(time.Second * 10)
+		for {
+			select {
+			case <-h.flushDone:
+				log.Println("服务检查处理器已关闭....")
+				return
+			default:
+				go h.flushInstance()
+				time.Sleep(time.Second * 30)
+			}
+		}
+	}()
+}
+func (h *JobManagerHandle) flushInstance() {
 	h.instanceLock.RLock()
 	defer h.instanceLock.RUnlock()
 	startTime := time.Now().UnixNano() / 1000000
@@ -176,8 +237,4 @@ func (h *JobManagerHandle) flush() {
 	}
 	endTime := time.Now().UnixNano() / 1000000
 	log.Printf("service node refresh completed[刷新完成]:%d,time consuming:%d,此次执行共刷新%d个实例", endTime, endTime-startTime, len(h.instanceList))
-}
-
-// 预留设定
-type instanceManager struct {
 }

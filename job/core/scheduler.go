@@ -1,6 +1,7 @@
 package core
 
 import (
+	"buding-job/orm"
 	"buding-job/orm/do"
 	"time"
 )
@@ -44,7 +45,10 @@ func (scheduler *Scheduler) setParser(info *do.JobInfoDo) {
 }
 
 func (scheduler *Scheduler) FlushTime() {
-	scheduler.NextTime = scheduler.Parser.NextTime()
+	nextTime := scheduler.Parser.NextTime()
+	scheduler.NextTime = nextTime
+	orm.DB.Model(&do.JobInfoDo{}).Where("id=?", scheduler.Id).Update(
+		"next_time", &nextTime)
 }
 func (scheduler *Scheduler) Next(now time.Time) time.Time {
 	return scheduler.Parser.Next(now)

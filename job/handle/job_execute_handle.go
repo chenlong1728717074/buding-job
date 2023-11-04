@@ -15,81 +15,43 @@ import (
 	"time"
 )
 
-var JobSchedule *jobScheduleHandle
+var JobExecute *jobExecuteHandle
 
 func init() {
-	JobSchedule = NewJobScheduleHandle()
+	JobExecute = NewJobExecuteHandle()
 }
 
-type jobScheduleHandle struct {
-	lock    sync.RWMutex
-	JobScan chan interface{}
+type jobExecuteHandle struct {
+	lock sync.RWMutex
 }
 
-func NewJobScheduleHandle() *jobScheduleHandle {
-	return &jobScheduleHandle{
-		lock:    sync.RWMutex{},
-		JobScan: make(chan interface{}),
+func NewJobExecuteHandle() *jobExecuteHandle {
+	return &jobExecuteHandle{
+		lock: sync.RWMutex{},
 	}
-}
-func (job *jobScheduleHandle) Start() {
-	//todo 获取数据
-	job.start()
-}
-func (job *jobScheduleHandle) Stop() {
-
-}
-
-func (job *jobScheduleHandle) start() {
-	go func() {
-		for {
-			select {
-			case <-job.JobScan:
-				return
-			default:
-				start := time.Now()
-				for _, c := range JobManagerProcessor.jobList {
-					if c.NextTime.Before(start) {
-						Execute(c, true)
-					}
-				}
-				end := time.Now()
-				consum := end.UnixMilli() - start.UnixMilli()
-				if consum < 1000 {
-					desiredSleepTime := 1000 - consum
-					time.Sleep(time.Duration(desiredSleepTime) * time.Millisecond)
-				}
-			}
-		}
-	}()
-}
-func Execute(job *core.Scheduler, schedule bool) {
-	if schedule {
-		//todo 判断是否自动调度,如果属于调度,那么就修改数据
-		job.NextTime = job.Next(time.Now())
-	}
-	go execute(job)
 }
 
 // 执行逻辑
-func execute(job *core.Scheduler) {
+func (jobExecute *jobExecuteHandle) Execute(job *core.Scheduler, schedule bool) {
 	//没有服务注册上去,不允许执行
-	if !job.Manager.Permission() {
-		return
+	if job.Manager.Permission() {
+		// 1:单机/2:广播
+		lockDo, addLog, run := jobExecute.permission(job)
+		if addLog {
+			jobExecute.doExecute(job, lockDo, run)
+		}
 	}
-	// 1:单机/2:广播
-	lockDo, addLog, run := permission(job)
-	if !addLog {
-		return
+	//刷新下次时间
+	if schedule {
+		job.FlushTime()
 	}
-	doExecute(job, lockDo, run)
 }
 
 // 执行任务
-func doExecute(job *core.Scheduler, lockDo *do.JobLockDo, run bool) {
+func (jobExecute *jobExecuteHandle) doExecute(job *core.Scheduler, lockDo *do.JobLockDo, run bool) {
 	var jobLog *do.JobLogDo
 	var flag bool
-	if jobLog, flag = createLog(job); !flag {
+	if jobLog, flag = jobExecute.createLog(job); !flag {
 		log.Println("log add fail")
 		return
 	}
@@ -97,21 +59,19 @@ func doExecute(job *core.Scheduler, lockDo *do.JobLockDo, run bool) {
 		jobLog.ProcessingStatus = constant.Serial
 		orm.DB.Updates(jobLog)
 	}
-	initExecuteLog(jobLog)
+	jobExecute.initExecuteLog(jobLog)
 	//调度失败就删除锁
-	if !dispatch(job, jobLog) {
+	if !jobExecute.dispatch(job, jobLog) {
 		orm.DB.Delete(lockDo)
 	}
-	//刷新下次时间
-	job.FlushTime()
 }
 
 // 远程调度控制
-func dispatch(job *core.Scheduler, logDo *do.JobLogDo) bool {
+func (jobExecute *jobExecuteHandle) dispatch(job *core.Scheduler, logDo *do.JobLogDo) bool {
 	instance := job.Manager.Routing(core.RouterStrategy(job.RoutingPolicy))
 	flag := true
-	err := doDispatch(job.JobHandle, job.Params, instance.Addr, logDo.Id)
-	if err != nil && !failover(instance, job, logDo.Id) {
+	err := jobExecute.doDispatch(job.JobHandle, job.Params, instance.Addr, logDo.Id)
+	if err != nil && !jobExecute.failover(instance, job, logDo.Id) {
 		//调度失败
 		flag = false
 		logDo.DispatchStatus = 2
@@ -123,13 +83,13 @@ func dispatch(job *core.Scheduler, logDo *do.JobLogDo) bool {
 }
 
 // 故障转移
-func failover(instance *core.Instance, job *core.Scheduler, logId int64) bool {
+func (jobExecute *jobExecuteHandle) failover(instance *core.Instance, job *core.Scheduler, logId int64) bool {
 	var flag bool
 	for _, newInstance := range job.Manager.Router.AllInstance() {
 		if newInstance.Addr == instance.Addr {
 			continue
 		}
-		if err := doDispatch(job.JobHandle, job.Params, newInstance.Addr, logId); err == nil {
+		if err := jobExecute.doDispatch(job.JobHandle, job.Params, newInstance.Addr, logId); err == nil {
 			flag = true
 			break
 		}
@@ -138,7 +98,7 @@ func failover(instance *core.Instance, job *core.Scheduler, logId int64) bool {
 }
 
 // 执行调度
-func doDispatch(jobHandle string, param string, addr string, logId int64) error {
+func (jobExecute *jobExecuteHandle) doDispatch(jobHandle string, param string, addr string, logId int64) error {
 	dial, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return err
@@ -155,7 +115,7 @@ func doDispatch(jobHandle string, param string, addr string, logId int64) error 
 }
 
 // 调度前初始化日志
-func initExecuteLog(jobLog *do.JobLogDo) {
+func (jobExecute *jobExecuteHandle) initExecuteLog(jobLog *do.JobLogDo) {
 	now := time.Now()
 	jobLog.DispatchTime = &now
 	// 0失败 1成功
@@ -165,7 +125,7 @@ func initExecuteLog(jobLog *do.JobLogDo) {
 }
 
 // 是否允许执行(管理器必须有活跃的机器&必须是允许串行)第一个bool表示是否允许添加日志,第二个bool表示是否允许执行
-func permission(job *core.Scheduler) (*do.JobLockDo, bool, bool) {
+func (jobExecute *jobExecuteHandle) permission(job *core.Scheduler) (*do.JobLockDo, bool, bool) {
 	if !job.Manager.Permission() {
 		return nil, false, false
 	}
@@ -191,7 +151,7 @@ func permission(job *core.Scheduler) (*do.JobLockDo, bool, bool) {
 }
 
 // 创建日志
-func createLog(job *core.Scheduler) (*do.JobLogDo, bool) {
+func (jobExecute *jobExecuteHandle) createLog(job *core.Scheduler) (*do.JobLogDo, bool) {
 	logDo := &do.JobLogDo{
 		JobId:                job.Id,
 		ManageId:             job.Manager.Id,
