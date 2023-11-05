@@ -9,7 +9,7 @@
 <p>改进后的buding-job采用了更为底层的cronexpr库来解析cron表达式,同时自己实现了定时扫描的逻辑</p>
 <p>项目在原来的基础上进行了很多的改动，如改进型了路由模式，重新梳理启动流程，改进Grpc调度，同时也优化了大量的代码</p>
 <p>之所以重构的项目命名为buding-job,是为了纪念本人养的第一条宠物狗,名字叫布丁</p>
-<img alt="img.png" height="100" src="img/img.png" width="100"/>
+<img alt="img.png" height="100" src="static/img/img.png" width="100"/>
 <h3>特性</h3>
 </div>
 

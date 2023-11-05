@@ -45,5 +45,6 @@ func (app *JobApp) Stop() {
 }
 
 func (app *JobApp) registerServer() {
-	to.RegisterServerServer(app.grpcServer, service.NewServer())
+	to.RegisterServerServer(app.grpcServer, service.NewServerService())
+	to.RegisterJobServer(app.grpcServer, service.NewJobService())
 }

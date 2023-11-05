@@ -13,15 +13,15 @@ import (
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
-type Server struct {
+type ServerService struct {
 	to.UnimplementedServerServer
 }
 
-func NewServer() *Server {
-	return &Server{}
+func NewServerService() *ServerService {
+	return &ServerService{}
 }
 
-func (*Server) Register(ctx context.Context, req *to.RegisterRequest) (*emptypb.Empty, error) {
+func (*ServerService) Register(ctx context.Context, req *to.RegisterRequest) (*emptypb.Empty, error) {
 	var m do.JobManagementDo
 	orm.DB.Where("app_name = ?", req.JobManager).Find(&m)
 	if m.Id == 0 {
@@ -31,6 +31,6 @@ func (*Server) Register(ctx context.Context, req *to.RegisterRequest) (*emptypb.
 	return &emptypb.Empty{}, nil
 }
 
-func (*Server) Logout(context.Context, *to.RegisterRequest) (*emptypb.Empty, error) {
+func (*ServerService) Logout(context.Context, *to.RegisterRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Logout not implemented")
 }
