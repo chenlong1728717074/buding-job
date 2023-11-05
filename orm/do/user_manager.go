@@ -12,6 +12,6 @@ type UserManagerDo struct {
 	ManagerId int64
 }
 
-func (UserManagerDo) TableName() string {
+func (*UserManagerDo) TableName() string {
 	return "tb_user_manager"
 }

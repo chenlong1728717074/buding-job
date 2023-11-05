@@ -15,6 +15,6 @@ type JobManagementDo struct {
 	BelongingServer string `gorm:"type:varchar(32);comment:归属服务,属于预留字段，为后期集群做准备"`
 }
 
-func (JobManagementDo) TableName() string {
+func (*JobManagementDo) TableName() string {
 	return "tb_job_management"
 }

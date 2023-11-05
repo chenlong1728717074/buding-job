@@ -7,7 +7,7 @@ type JobInfoDto struct {
 	JobDescription  string `json:"jobDescription" form:"jobDescription" json:"jobDescription" uri:"jobDescription" xml:"jobDescription" yaml:"jobDescription"`
 	JobHandler      string `json:"jobHandler" form:"jobHandler" json:"jobHandler" uri:"jobHandler" xml:"jobHandler" yaml:"jobHandler" binding:"required"`
 	JobParams       string `json:"jobParams" form:"jobParams" json:"jobParams" uri:"jobParams" xml:"jobParams" yaml:"jobParams"`
-	JobType         int32  `json:"jobType" form:"jobType" json:"jobType" uri:"jobType" xml:"jobType" yaml:"jobType" binding:"required"`
+	JobTimeType     int32  `json:"jobTimeType" form:"jobTimeType" json:"jobTimeType" uri:"jobTimeType" xml:"jobTimeType" yaml:"jobTimeType" binding:"required"`
 	JobInterval     int64  `json:"jobInterval" form:"jobInterval" json:"jobInterval" uri:"jobInterval" xml:"jobInterval" yaml:"jobInterval"`
 	Cron            string `json:"core" form:"core" json:"core" uri:"core" xml:"core" yaml:"core"`
 	Retry           int32  `json:"retry" form:"retry" json:"retry" uri:"retry" xml:"retry" yaml:"retry" binding:"required"`

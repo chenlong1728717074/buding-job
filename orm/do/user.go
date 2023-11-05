@@ -16,6 +16,6 @@ type UserDo struct {
 	Role     int    `gorm:"column:role;comment:权限 1管理员 2:普通;not null"`
 }
 
-func (UserDo) TableName() string {
+func (*UserDo) TableName() string {
 	return "tb_user"
 }

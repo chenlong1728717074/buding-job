@@ -17,6 +17,7 @@ type Scheduler struct {
 	RoutingPolicy   int32
 	MisfireStrategy int32
 	Retry           int32
+	Timeout         int32
 }
 
 func NewScheduler(info *do.JobInfoDo) *Scheduler {
@@ -29,6 +30,7 @@ func NewScheduler(info *do.JobInfoDo) *Scheduler {
 		RoutingPolicy:   info.RoutingPolicy,
 		MisfireStrategy: info.MisfireStrategy,
 		Params:          info.JobParams,
+		Timeout:         info.Timeout,
 	}
 	//时间解析器
 	job.setParser(info)
@@ -37,7 +39,7 @@ func NewScheduler(info *do.JobInfoDo) *Scheduler {
 }
 
 func (scheduler *Scheduler) setParser(info *do.JobInfoDo) {
-	if info.JobType == Cron {
+	if info.JobTimeType == Cron {
 		scheduler.Parser = NewCronTimeParser(info.Cron)
 		return
 	}

@@ -31,62 +31,73 @@ func NewJobExecuteHandle() *jobExecuteHandle {
 	}
 }
 
-// 执行逻辑
-func (jobExecute *jobExecuteHandle) Execute(job *core.Scheduler, schedule bool) {
-	//没有服务注册上去,不允许执行
-	if job.Manager.Permission() {
-		// 1:单机/2:广播
-		lockDo, addLog, run := jobExecute.permission(job)
-		if addLog {
-			jobExecute.doExecute(job, lockDo, run)
+// Execute 执行逻辑
+func (jobExecute *jobExecuteHandle) Execute(job *core.Scheduler, triggerType bool) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println("执行出错,原因是:", err)
 		}
-	}
-}
-
-// 执行任务
-func (jobExecute *jobExecuteHandle) doExecute(job *core.Scheduler, lockDo *do.JobLockDo, run bool) {
-	var jobLog *do.JobLogDo
-	var flag bool
-	if jobLog, flag = jobExecute.createLog(job); !flag {
-		log.Println("log add fail")
+	}()
+	//没有服务注册上去,不允许执行
+	if !job.Manager.Permission() {
 		return
 	}
-	if !run {
+	if job.ExecuteType == 1 {
+		jobExecute.dispatchBroadcast(job, triggerType)
+		return
+	}
+	jobExecute.dispatchClustering(job, triggerType)
+}
+
+// 集群模式下路由调用
+func (jobExecute *jobExecuteHandle) dispatchBroadcast(job *core.Scheduler, triggerType bool) {
+	lock, allow := jobExecute.permission(job)
+	//加锁失败并且抛弃
+	if !allow && job.MisfireStrategy == 1 {
+		return
+	}
+	jobLog := jobExecute.createLog(job, triggerType)
+	//串行的话需要添加日志进行重试
+	if !allow && job.MisfireStrategy == 3 {
 		jobLog.ProcessingStatus = constant.Serial
 		orm.DB.Updates(jobLog)
+		return
 	}
-	jobExecute.initExecuteLog(jobLog)
-	//调度失败就删除锁
-	if !jobExecute.dispatch(job, jobLog) {
-		orm.DB.Delete(lockDo)
+	//路由
+	var flag bool
+	instance := job.Manager.Routing(core.RouterStrategy(job.RoutingPolicy))
+	err := jobExecute.dispatch(job.JobHandle, job.Params, instance.Addr, jobLog.Id)
+	if !(err == nil || jobExecute.failover(instance, job, jobLog)) {
+		//调度失败
+		flag = true
+		jobLog.DispatchStatus = 2
+		jobLog.ExecuteStatus = -1
+		jobLog.ExecuteRemark = fmt.Sprintf("任务调度失败%s", err.Error())
+	}
+	orm.DB.Updates(jobLog)
+	//调度失败并且不为并行
+	if !flag && job.MisfireStrategy != 2 {
+		lock.UnLock()
 	}
 }
 
-// 远程调度控制
-func (jobExecute *jobExecuteHandle) dispatch(job *core.Scheduler, logDo *do.JobLogDo) bool {
-	instance := job.Manager.Routing(core.RouterStrategy(job.RoutingPolicy))
-	flag := true
-	err := jobExecute.doDispatch(job.JobHandle, job.Params, instance.Addr, logDo.Id)
-	if err != nil && !jobExecute.failover(instance, job, logDo.Id) {
-		//调度失败
-		flag = false
-		logDo.DispatchStatus = 2
-		logDo.ExecuteStatus = -1
-		logDo.Remark = fmt.Sprintf("任务调度失败%s", err.Error())
+func (jobExecute *jobExecuteHandle) dispatchClustering(job *core.Scheduler, triggerType bool) {
+	instance := job.Manager.Router.AllInstance()
+	for _, nowInstance := range instance {
+		fmt.Println(nowInstance)
 	}
-	orm.DB.Updates(logDo)
-	return flag
 }
 
 // 故障转移
-func (jobExecute *jobExecuteHandle) failover(instance *core.Instance, job *core.Scheduler, logId int64) bool {
+func (jobExecute *jobExecuteHandle) failover(instance *core.Instance, job *core.Scheduler, jobLog *do.JobLogDo) bool {
 	var flag bool
-	for _, newInstance := range job.Manager.Router.AllInstance() {
-		if newInstance.Addr == instance.Addr {
+	for _, nowInstance := range job.Manager.Router.AllInstance() {
+		if nowInstance.Addr == instance.Addr {
 			continue
 		}
-		if err := jobExecute.doDispatch(job.JobHandle, job.Params, newInstance.Addr, logId); err == nil {
+		if err := jobExecute.dispatch(job.JobHandle, job.Params, nowInstance.Addr, jobLog.GetId()); err == nil {
 			flag = true
+			jobLog.DispatchAddress = nowInstance.Addr
 			break
 		}
 	}
@@ -94,7 +105,7 @@ func (jobExecute *jobExecuteHandle) failover(instance *core.Instance, job *core.
 }
 
 // 执行调度
-func (jobExecute *jobExecuteHandle) doDispatch(jobHandle string, param string, addr string, logId int64) error {
+func (jobExecute *jobExecuteHandle) dispatch(jobHandle string, param string, addr string, logId int64) error {
 	dial, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return err
@@ -110,55 +121,41 @@ func (jobExecute *jobExecuteHandle) doDispatch(jobHandle string, param string, a
 	return callErr
 }
 
-// 调度前初始化日志
-func (jobExecute *jobExecuteHandle) initExecuteLog(jobLog *do.JobLogDo) {
-	now := time.Now()
-	jobLog.DispatchTime = &now
-	// 0失败 1成功
-	jobLog.DispatchStatus = 1
-	jobLog.DispatchType = 1
-	jobLog.ExecuteStatus = 1
-}
-
 // 是否允许执行(管理器必须有活跃的机器&必须是允许串行)第一个bool表示是否允许添加日志,第二个bool表示是否允许执行
-func (jobExecute *jobExecuteHandle) permission(job *core.Scheduler) (*do.JobLockDo, bool, bool) {
-	if !job.Manager.Permission() {
-		return nil, false, false
-	}
+func (jobExecute *jobExecuteHandle) permission(job *core.Scheduler) (*do.JobLockDo, bool) {
 	//2串行
 	if job.MisfireStrategy == 2 {
-		return nil, true, true
+		return nil, true
 	}
-	now := time.Now()
-	lock := &do.JobLockDo{
-		Id:       job.Id,
-		LockTime: &now,
-	}
-	tx := orm.DB.Save(lock)
+	lock := do.NewJobLock(job.Id)
 	//加锁失败&&丢弃
-	if tx.RowsAffected == 0 && job.MisfireStrategy == 1 {
-		return nil, false, false
-	}
-	//加锁失败&&串行
-	if job.MisfireStrategy == 3 && tx.RowsAffected == 0 {
-		return nil, true, false
-	}
-	return lock, true, true
+	isLock := lock.Lock(job.Timeout)
+	return lock, isLock
 }
 
 // 创建日志
-func (jobExecute *jobExecuteHandle) createLog(job *core.Scheduler) (*do.JobLogDo, bool) {
+func (jobExecute *jobExecuteHandle) createLog(job *core.Scheduler, schedule bool) *do.JobLogDo {
+	now := time.Now()
 	logDo := &do.JobLogDo{
 		JobId:                job.Id,
 		ManageId:             job.Manager.Id,
 		DispatchHandler:      job.JobHandle,
+		DispatchTime:         &now,
+		DispatchStatus:       1,
+		DispatchType:         1,
+		ExecuteStatus:        1,
 		Retry:                0,
 		ProcessingStatus:     constant.NoProcessingRequired,
 		ExecuteConsumingTime: -1,
 	}
-	tx := orm.DB.Create(logDo)
-	if tx.RowsAffected == 0 {
-		return nil, false
+	logDo.DispatchType = constant.ManualTriggering
+	if schedule {
+		logDo.DispatchType = constant.AutomaticTriggering
 	}
-	return logDo, true
+	tx := orm.DB.Create(logDo)
+	if tx.RowsAffected == 0 || tx.Error != nil {
+		log.Println("log insert fail")
+		panic(tx.Error)
+	}
+	return logDo
 }

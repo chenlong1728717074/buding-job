@@ -9,6 +9,6 @@ type ExecutionLog struct {
 	ExecuteLogs string `gorm:"comment:执行日志"`
 }
 
-func (ExecutionLog) TableName() string {
+func (*ExecutionLog) TableName() string {
 	return "tb_job_execution_log"
 }
