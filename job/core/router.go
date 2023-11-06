@@ -1,6 +1,7 @@
 package core
 
 import (
+	"buding-job/common/utils"
 	"sync"
 )
 
@@ -108,14 +109,16 @@ type FirstRouter struct {
 }
 
 func NewFirstRouter() *FirstRouter {
-	return nil
+	result := &FirstRouter{}
+	result.lock = sync.RWMutex{}
+	result.instanceList = make([]*Instance, 0)
+	return result
 }
 
 func (router *FirstRouter) GetInstance() *Instance {
 	if len(router.instanceList) == 0 {
 		return nil
 	}
-
 	return router.instanceList[0]
 }
 
@@ -125,28 +128,43 @@ type RandomRouter struct {
 }
 
 func NewRandomRouter() *RandomRouter {
-	return nil
+	result := &RandomRouter{}
+	result.lock = sync.RWMutex{}
+	result.instanceList = make([]*Instance, 0)
+	return result
 }
 func (router *RandomRouter) GetInstance() *Instance {
 	if len(router.instanceList) == 0 {
 		return nil
 	}
-	return nil
+	index := utils.RandI64(len(router.instanceList))
+	return router.instanceList[index]
 }
 
 // PollingRouter 轮询路由器
 type PollingRouter struct {
-	next int32
+	next int
 	abstractRouter
 }
 
 func NewPollingRouter() *PollingRouter {
-	return nil
+	router := &PollingRouter{}
+	router.lock = sync.RWMutex{}
+	router.instanceList = make([]*Instance, 0)
+	router.next = 0
+	return router
 }
 
 func (router *PollingRouter) GetInstance() *Instance {
 	if len(router.instanceList) == 0 {
 		return nil
 	}
-	return nil
+	router.lock.Lock()
+	defer router.lock.Unlock()
+	next := router.next
+	router.next = 0
+	if !((next + 1) >= len(router.instanceList)) {
+		router.next = next + 1
+	}
+	return router.instanceList[next]
 }

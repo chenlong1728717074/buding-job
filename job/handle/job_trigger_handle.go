@@ -26,7 +26,6 @@ func NewJobTriggerHandle() *jobTriggerHandle {
 	}
 }
 func (job *jobTriggerHandle) Start() {
-	//todo 获取数据
 	job.start()
 }
 func (job *jobTriggerHandle) Stop() {
@@ -55,6 +54,7 @@ func (job *jobTriggerHandle) start() {
 					timer.Stop()
 					break
 				case <-timer.C:
+					//XXX 优化后续这一步骤可以加入时间轮而非直接执行
 					start := time.Now()
 					list := JobManagerProcessor.GetJobList()
 					for _, c := range list {
@@ -67,7 +67,8 @@ func (job *jobTriggerHandle) start() {
 					}
 					end := time.Now()
 					consum := end.UnixMilli() - start.UnixMilli()
-					log.Println("本次执行耗时", consum, "ms---->", time.Now(), "任务大小->", len(list))
+
+					log.Println("本次执行耗时", consum, "ms---->", "任务大小->", len(list))
 					JobManagerProcessor.flushSchedulerSort()
 					break
 				}

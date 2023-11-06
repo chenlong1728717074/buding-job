@@ -1,6 +1,7 @@
 package test
 
 import (
+	"buding-job/common/utils"
 	"fmt"
 	"github.com/gorhill/cronexpr"
 	"testing"
@@ -27,4 +28,7 @@ func TestArr(t *testing.T) {
 }
 func getSince() []int {
 	return nil
+}
+func TestRand(t *testing.T) {
+	println(utils.RandI64(1))
 }
