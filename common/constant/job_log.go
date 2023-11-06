@@ -22,7 +22,7 @@ const (
 	AutomaticTriggering = 2
 )
 
-// 0:无需处理/1:已处理/2:告警/3:告警失败
+// 0:无需处理/1需要告警/2:告警/3:告警失败
 const (
 	NoProcessingRequired = 0
 	Processed            = 1
