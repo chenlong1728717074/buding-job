@@ -63,9 +63,9 @@ func (h *JobManagerHandle) Permission() bool {
 }
 
 func (h *JobManagerHandle) init() {
-	//这一步操作后期放监视器 定时检查锁
+	//todo 这一步操作可以不需要,是为了项目初期调试防止关闭服务来不及删除锁的额外操作
 	if err := orm.DB.Exec(constant.DeleteLock).Error; err != nil {
-		//log.Fatal("Failed to delete data: ", err)
+		log.Fatal("Failed to delete data: ", err)
 	}
 	//加载任务管理器
 	var managers []do.JobManagementDo

@@ -35,7 +35,7 @@ func (base *BaseModel) BeforeUpdate(tx *gorm.DB) (err error) {
 	return
 }
 
-//todo 自定义逻辑删除逻辑,用原生DeletedAt
+// 自定义逻辑删除逻辑,目前用原生DeletedAt,框架限制用gorm自带的更好
 /*var ErrCancelled = errors.New("Deletion cancelled")
 func (b *BaseModel) BeforeDelete(tx *gorm.DB) (err error) {
 	if b.IsDeleted {
