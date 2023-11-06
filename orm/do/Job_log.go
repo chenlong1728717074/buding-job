@@ -26,11 +26,7 @@ type JobLogDo struct {
 	ExecuteStatus        int32      `gorm:"comment:执行状态 -1:未开始 0:串行 1:进行中 2:执行成功 3:执行出现异常 4:执行超时"`
 	ExecuteRemark        string     `gorm:"type:varchar(128);"`
 	Retry                int32      `gorm:"default:0;comment:重试次数"`
-	ProcessingStatus     int32      `gorm:"default:0;comment:处理状态 0:无需处理 1:需要告警 2:已告警 3:告警失败"`
-}
-
-func NewJobLog() {
-
+	ProcessingStatus     int32      `gorm:"default:0;comment:处理状态 0:无需处理/1:需要重试/2:无需告警/3:告警成功/4:告警失败"`
 }
 
 func (*JobLogDo) TableName() string {

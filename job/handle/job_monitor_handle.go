@@ -1,8 +1,10 @@
 package handle
 
 import (
+	"buding-job/common/constant"
 	"buding-job/common/utils"
 	"buding-job/orm"
+	"buding-job/orm/bo"
 	"buding-job/orm/do"
 	"log"
 	"time"
@@ -70,5 +72,40 @@ func (monitor *JobMonitorHandle) failJobScan() {
 }
 
 func (monitor *JobMonitorHandle) timeoutScan() {
+	//先扫描删除的任务
+	monitor.lapseTimeoutJobScan()
+	//再扫描还在的任务
+	monitor.effectiveTimeoutJobScan()
+}
 
+func (monitor *JobMonitorHandle) lapseTimeoutJobScan() {
+	var jobLogs []*do.JobLogDo
+	orm.DB.Raw(constant.LapseTimeoutJob).Scan(&jobLogs)
+	if len(jobLogs) == 0 {
+		return
+	}
+	for _, jobLog := range jobLogs {
+		//Tasks that do not exist do not need to be retried
+		jobLog.ExecuteStatus = constant.Timeout
+		jobLog.ProcessingStatus = constant.NoProcessingRequired
+		orm.DB.Updates(&jobLog)
+	}
+}
+
+func (monitor *JobMonitorHandle) effectiveTimeoutJobScan() {
+	var jobLogs []bo.JobTimeoutBo
+	orm.DB.Raw(constant.EffectiveTimeoutJob).Scan(&jobLogs)
+	if len(jobLogs) == 0 {
+		return
+	}
+	now := time.Now()
+	for _, jobLog := range jobLogs {
+		dispatchTime := jobLog.DispatchTime
+		orm.DB.Model(&do.JobLogDo{}).Where("id=?", jobLog.Id).Updates(map[string]interface{}{
+			"execute_start_time":     dispatchTime,
+			"execute_end_time":       &now,
+			"execute_consuming_time": utils.ComputingTime(*dispatchTime, now),
+			"execute_status":         constant.Timeout,
+		})
+	}
 }

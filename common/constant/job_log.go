@@ -22,10 +22,11 @@ const (
 	AutomaticTriggering = 2
 )
 
-// 0:无需处理/1需要告警/2:告警/3:告警失败
+// 0:无需处理/1:需要重试/2:无需告警(有问题但是任务已经删除或者关闭)/3:告警成功/4:告警失败
 const (
 	NoProcessingRequired = 0
-	Processed            = 1
-	Warned               = 2
-	WarningFailed        = 3
+	Retry                = 1
+	NotWarned            = 2
+	WarnedSuccess        = 3
+	WarningFailed        = 4
 )

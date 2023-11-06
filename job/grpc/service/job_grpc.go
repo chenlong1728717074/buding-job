@@ -34,12 +34,17 @@ func (job *JobService) callback(jobLog *do.JobLogDo, resp *to.CallbackResponse) 
 	job.Unlock(jobLog.JobId)
 	var jobInfo do.JobInfoDo
 	orm.DB.First(&jobInfo, jobLog.JobId)
+	//设置无需处理,即使时任务超时,只要进行了回调,那就算有结果,所以系统判断的超时不需要重试
+	jobLog.ProcessingStatus = constant.NoProcessingRequired
+	//超时
 	if jobLog.ExecuteStatus != constant.Timeout {
 		jobLog.ExecuteStatus = resp.Status
 	}
+	//执行失败
 	if resp.Status == constant.ExecutionFailed {
-		jobLog.ExecuteRemark = "execute fail"
+		job.failJob(jobLog, jobInfo)
 	}
+	//执行成功,
 	if resp.Status == constant.ExecutionSucceeded {
 		jobLog.ExecuteRemark = "execute success"
 	}
@@ -48,12 +53,27 @@ func (job *JobService) callback(jobLog *do.JobLogDo, resp *to.CallbackResponse) 
 	jobLog.ExecuteStartTime = &startTime
 	jobLog.ExecuteEndTime = &endTime
 	jobLog.ExecuteConsumingTime = utils.ComputingTime(startTime, endTime)
-	if jobLog.Retry >= jobInfo.Retry {
-		jobLog.ProcessingStatus = constant.Processed
-	}
 	orm.DB.Updates(jobLog)
 	if len(resp.Logs) > 0 {
 		job.saveExecuteLog(resp.GetId(), resp.Logs)
+	}
+}
+
+func (job *JobService) failJob(jobLog *do.JobLogDo, jobInfo do.JobInfoDo) {
+	jobLog.ExecuteRemark = "execute fail"
+	jobLog.ProcessingStatus = constant.NoProcessingRequired
+	//删除了就不需要处理了
+	if jobInfo.Id == 0 {
+		return
+	}
+	//开启就需要重试,关闭了就用上面的无需处理
+	if jobInfo.Enable {
+		jobLog.ProcessingStatus = constant.Retry
+	}
+	//只要任务存在不管是开启状态还是关闭都要告警
+	if jobLog.Retry >= jobInfo.Retry {
+		//todo 需要添加告警逻辑,暂时设置无需告警
+		jobLog.ProcessingStatus = constant.NotWarned
 	}
 }
 
