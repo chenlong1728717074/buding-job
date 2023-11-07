@@ -3,6 +3,7 @@ package handle
 import (
 	"buding-job/common/constant"
 	"buding-job/common/utils"
+	"buding-job/job/alarm"
 	"buding-job/orm"
 	"buding-job/orm/bo"
 	"buding-job/orm/do"
@@ -136,5 +137,8 @@ func (monitor *JobMonitorHandle) alarm(jobLog *do.JobLogDo, author string, email
 	}
 	//alarm
 	jobLog.ProcessingStatus = constant.WarningFailed
-
+	status := alarm.Mail.CommonAlarm(author, email, "", "")
+	if status {
+		jobLog.ProcessingStatus = constant.WarnedSuccess
+	}
 }

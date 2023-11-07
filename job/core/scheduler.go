@@ -3,6 +3,7 @@ package core
 import (
 	"buding-job/orm"
 	"buding-job/orm/do"
+	"log"
 	"time"
 )
 
@@ -51,6 +52,7 @@ func (scheduler *Scheduler) FlushTime() {
 	scheduler.NextTime = nextTime
 	orm.DB.Model(&do.JobInfoDo{}).Where("id=?", scheduler.Id).Update(
 		"next_time", &nextTime)
+	log.Println("更新任务下次执行时间:", nextTime)
 }
 func (scheduler *Scheduler) Next(now time.Time) time.Time {
 	return scheduler.Parser.Next(now)

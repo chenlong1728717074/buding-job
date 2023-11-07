@@ -3,6 +3,7 @@ package service
 import (
 	"buding-job/common/constant"
 	"buding-job/common/utils"
+	"buding-job/job/alarm"
 	"buding-job/job/grpc/to"
 	"buding-job/orm"
 	"buding-job/orm/do"
@@ -74,7 +75,11 @@ func (job *JobService) failJob(jobLog *do.JobLogDo, jobInfo do.JobInfoDo) {
 	if jobLog.Retry >= jobInfo.Retry && jobLog.ProcessingStatus != constant.WarnedSuccess &&
 		jobLog.ProcessingStatus != constant.WarningFailed {
 		//todo 需要添加告警逻辑,暂时设置告警成功
-		jobLog.ProcessingStatus = constant.WarnedSuccess
+		jobLog.ProcessingStatus = constant.WarningFailed
+		status := alarm.Mail.CommonAlarm(jobInfo.Author, jobInfo.Email, "", jobInfo.JobName)
+		if status {
+			jobLog.ProcessingStatus = constant.WarnedSuccess
+		}
 	}
 }
 
