@@ -72,40 +72,69 @@ func (monitor *JobMonitorHandle) failJobScan() {
 }
 
 func (monitor *JobMonitorHandle) timeoutScan() {
-	//先扫描删除的任务
-	monitor.lapseTimeoutJobScan()
-	//再扫描还在的任务
-	monitor.effectiveTimeoutJobScan()
-}
+	go func() {
+		for {
+			select {
+			case <-monitor.timeoutDone:
+				return
+			default:
+				monitor.timeoutJob()
+				time.Sleep(time.Second * 30)
+			}
+		}
+	}()
 
-func (monitor *JobMonitorHandle) lapseTimeoutJobScan() {
-	var jobLogs []*do.JobLogDo
-	orm.DB.Raw(constant.LapseTimeoutJob).Scan(&jobLogs)
-	if len(jobLogs) == 0 {
-		return
-	}
-	for _, jobLog := range jobLogs {
-		//Tasks that do not exist do not need to be retried
-		jobLog.ExecuteStatus = constant.Timeout
-		jobLog.ProcessingStatus = constant.NoProcessingRequired
-		orm.DB.Updates(&jobLog)
-	}
 }
-
-func (monitor *JobMonitorHandle) effectiveTimeoutJobScan() {
+func (monitor *JobMonitorHandle) timeoutJob() {
+	defer utils.Recover("执行出错,原因是:")
 	var jobLogs []bo.JobTimeoutBo
-	orm.DB.Raw(constant.EffectiveTimeoutJob).Scan(&jobLogs)
+	orm.DB.Raw(constant.TimeoutJob).Scan(&jobLogs)
 	if len(jobLogs) == 0 {
 		return
 	}
-	now := time.Now()
-	for _, jobLog := range jobLogs {
-		dispatchTime := jobLog.DispatchTime
-		orm.DB.Model(&do.JobLogDo{}).Where("id=?", jobLog.Id).Updates(map[string]interface{}{
-			"execute_start_time":     dispatchTime,
-			"execute_end_time":       &now,
-			"execute_consuming_time": utils.ComputingTime(*dispatchTime, now),
-			"execute_status":         constant.Timeout,
-		})
+	for _, jobLogBo := range jobLogs {
+		//已经删除或者已经关闭的任务不需要预警也不需要重试
+		if jobLogBo.DeletedAt.Valid || !jobLogBo.Enable {
+			monitor.lapseTimeoutJob(&jobLogBo.JobLogDo)
+			continue
+		}
+		monitor.effectiveTimeoutJob(&jobLogBo)
 	}
+}
+
+func (monitor *JobMonitorHandle) lapseTimeoutJob(jobLog *do.JobLogDo) {
+	//Tasks that do not exist do not need to be retried
+	now := time.Now()
+	jobLog.ExecuteStartTime = jobLog.DispatchTime
+	jobLog.ExecuteEndTime = &now
+	jobLog.ExecuteConsumingTime = utils.ComputingTime(*jobLog.DispatchTime, now)
+	jobLog.ExecuteStatus = constant.Timeout
+	jobLog.ProcessingStatus = constant.NoProcessingRequired
+	orm.DB.Updates(&jobLog)
+}
+
+func (monitor *JobMonitorHandle) effectiveTimeoutJob(jobLogBo *bo.JobTimeoutBo) {
+	jobLog := &jobLogBo.JobLogDo
+	now := time.Now()
+	jobLog.ExecuteStartTime = jobLog.DispatchTime
+	jobLog.ExecuteEndTime = &now
+	jobLog.ExecuteConsumingTime = utils.ComputingTime(*jobLog.DispatchTime, now)
+	jobLog.ExecuteStatus = constant.Timeout
+	if jobLog.Retry < jobLogBo.Retry {
+		jobLog.ProcessingStatus = constant.Retry
+		jobLog.Retry = jobLog.Retry + 1
+	} else {
+		//告警
+		monitor.alarm(jobLog, jobLogBo.Author, jobLogBo.Email)
+	}
+	orm.DB.Updates(jobLog)
+}
+
+func (monitor *JobMonitorHandle) alarm(jobLog *do.JobLogDo, author string, email string) {
+	if email == "" {
+		jobLog.ProcessingStatus = constant.NoProcessingRequired
+	}
+	//alarm
+	jobLog.ProcessingStatus = constant.WarningFailed
+
 }

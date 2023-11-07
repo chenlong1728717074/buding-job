@@ -1,6 +1,6 @@
 package bo
 
-import "xll-job/orm/do"
+import "buding-job/orm/do"
 
 type RetryJobBo struct {
 	do.JobLogDo

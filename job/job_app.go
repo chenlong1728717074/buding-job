@@ -23,6 +23,7 @@ func NewJobApp() *JobApp {
 func (app *JobApp) Start() {
 	handle.JobManagerProcessor.Start()
 	handle.JobSchedule.Start()
+	handle.JobMonitor.Start()
 	app.registerServer()
 	app.startGrpc()
 }

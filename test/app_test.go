@@ -1,11 +1,16 @@
 package test
 
 import (
+	"buding-job/common/constant"
 	"buding-job/common/utils"
 	"buding-job/orm"
+	"buding-job/orm/bo"
 	"buding-job/orm/do"
 	"fmt"
 	"github.com/gorhill/cronexpr"
+	"github.com/jordan-wright/email"
+	"log"
+	"net/smtp"
 	"testing"
 	"time"
 )
@@ -40,4 +45,26 @@ func TestDelete(t *testing.T) {
 	orm.DB.Model(&do.JobLockDo{}).
 		Where("expire_time < ?", time.Now()).
 		Delete(&do.JobLockDo{})
+}
+
+func TestSelect(t *testing.T) {
+	var jobLogs []bo.JobTimeoutBo
+	orm.DB.Raw(constant.TimeoutJob).Scan(&jobLogs)
+	for _, value := range jobLogs {
+		fmt.Println(value.Email)
+		fmt.Println(value.JobLogDo)
+	}
+}
+func TestEmaiil(t *testing.T) {
+	e := email.NewEmail()
+	e.From = "dj <xxx@126.com>"
+	e.To = []string{"935653229@qq.com"}
+	e.Cc = []string{"test1@126.com", "test2@126.com"}
+	e.Bcc = []string{"secret@126.com"}
+	e.Subject = "Awesome web"
+	e.Text = []byte("Text Body is, of course, supported!")
+	err := e.Send("smtp.126.com:25", smtp.PlainAuth("", "xxx@126.com", "yyy", "smtp.126.com"))
+	if err != nil {
+		log.Fatal(err)
+	}
 }

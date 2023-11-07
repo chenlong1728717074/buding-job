@@ -71,9 +71,10 @@ func (job *JobService) failJob(jobLog *do.JobLogDo, jobInfo do.JobInfoDo) {
 		jobLog.ProcessingStatus = constant.Retry
 	}
 	//只要任务存在不管是开启状态还是关闭都要告警
-	if jobLog.Retry >= jobInfo.Retry {
-		//todo 需要添加告警逻辑,暂时设置无需告警
-		jobLog.ProcessingStatus = constant.NotWarned
+	if jobLog.Retry >= jobInfo.Retry && jobLog.ProcessingStatus != constant.WarnedSuccess &&
+		jobLog.ProcessingStatus != constant.WarningFailed {
+		//todo 需要添加告警逻辑,暂时设置告警成功
+		jobLog.ProcessingStatus = constant.WarnedSuccess
 	}
 }
 
