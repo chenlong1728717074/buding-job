@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"github.com/gorhill/cronexpr"
 	"github.com/jordan-wright/email"
+	"github.com/shirou/gopsutil/mem"
 	"log"
 	"net/smtp"
+	"runtime"
 	"testing"
 	"time"
 )
@@ -65,5 +67,28 @@ func TestEmaiil(t *testing.T) {
 		"xalbdtmrqtlzccei", "smtp.qq.com"))
 	if err != nil {
 		log.Fatal(err)
+	}
+}
+func TestOs(t *testing.T) {
+	fmt.Println("os:%S\n", runtime.GOOS)
+	fmt.Printf("CPU数量: %d\n", runtime.NumCPU())
+	memory, err := mem.VirtualMemory()
+	if err != nil {
+		fmt.Printf("无法获取内存信息: %v\n", err)
+		return
+	}
+
+	fmt.Printf("总内存: %v GB\n", memory.Total/1024/1024/1024)
+	fmt.Printf("可用内存: %v GB\n", memory.Available/1024/1024/1024)
+	fmt.Printf("已用内存: %v GB\n", memory.Used/1024/1024/1024)
+	fmt.Printf("内存使用率: %f%%\n", memory.UsedPercent)
+	println(runtime.Version())
+	println(runtime.GOROOT())
+	println(runtime.NumGoroutine())
+	var arr []byte
+	runtime.Stack(arr, true)
+	for _, v := range arr {
+		fmt.Println(v)
+
 	}
 }
