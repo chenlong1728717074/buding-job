@@ -36,7 +36,15 @@ func (job *JobService) callback(jobLog *do.JobLogDo, resp *to.CallbackResponse) 
 	var jobInfo do.JobInfoDo
 	orm.DB.First(&jobInfo, jobLog.JobId)
 	//设置无需处理,即使时任务超时,只要进行了回调,那就算有结果,所以系统判断的超时不需要重试
+	startTime := resp.StartTime.AsTime()
+	endTime := resp.EndTime.AsTime()
+	jobLog.ExecuteStartTime = &startTime
+	jobLog.ExecuteEndTime = &endTime
+	executeTime := utils.ComputingTime(startTime, endTime)
+	jobLog.ExecuteConsumingTime = executeTime
+	//处理状态
 	jobLog.ProcessingStatus = constant.NoProcessingRequired
+	jobLog.ExecuteRemark = "execute success"
 	//超时
 	if jobLog.ExecuteStatus != constant.Timeout {
 		jobLog.ExecuteStatus = resp.Status
@@ -45,15 +53,12 @@ func (job *JobService) callback(jobLog *do.JobLogDo, resp *to.CallbackResponse) 
 	if resp.Status == constant.ExecutionFailed {
 		job.failJob(jobLog, jobInfo)
 	}
-	//执行成功,
-	if resp.Status == constant.ExecutionSucceeded {
-		jobLog.ExecuteRemark = "execute success"
+	//执行成功,但是超时
+	if resp.Status == constant.ExecutionSucceeded && executeTime > int64(jobInfo.Timeout*1000) {
+		jobLog.ProcessingStatus = constant.Timeout
+		jobLog.ExecuteRemark = "timeout,execute success"
 	}
-	startTime := resp.StartTime.AsTime()
-	endTime := resp.EndTime.AsTime()
-	jobLog.ExecuteStartTime = &startTime
-	jobLog.ExecuteEndTime = &endTime
-	jobLog.ExecuteConsumingTime = utils.ComputingTime(startTime, endTime)
+
 	orm.DB.Updates(jobLog)
 	if len(resp.Logs) > 0 {
 		job.saveExecuteLog(resp.GetId(), resp.Logs)
@@ -74,7 +79,6 @@ func (job *JobService) failJob(jobLog *do.JobLogDo, jobInfo do.JobInfoDo) {
 	//只要任务存在不管是开启状态还是关闭都要告警
 	if jobLog.Retry >= jobInfo.Retry && jobLog.ProcessingStatus != constant.WarnedSuccess &&
 		jobLog.ProcessingStatus != constant.WarningFailed {
-		//todo 需要添加告警逻辑,暂时设置告警成功
 		jobLog.ProcessingStatus = constant.WarningFailed
 		status := alarm.Mail.CommonAlarm(jobInfo.Author, jobInfo.Email, "", jobInfo.JobName)
 		if status {
