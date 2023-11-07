@@ -2,6 +2,7 @@ package handle
 
 import (
 	"buding-job/common/constant"
+	"buding-job/common/utils"
 	"buding-job/job/core"
 	"buding-job/orm"
 	"buding-job/orm/do"
@@ -205,6 +206,7 @@ func (h *JobManagerHandle) serverInspect() {
 	}()
 }
 func (h *JobManagerHandle) flushInstance() {
+	defer utils.Recover("服务刷新出现异常")
 	h.instanceLock.RLock()
 	defer h.instanceLock.RUnlock()
 	startTime := time.Now().UnixNano() / 1000000

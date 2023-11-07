@@ -46,6 +46,8 @@ func (monitor *JobMonitorHandle) Stop() {
 
 func (monitor *JobMonitorHandle) expireLockScan() {
 	go func() {
+		//sleep 30s,wait  job execute
+		time.Sleep(time.Second * 30)
 		for {
 			select {
 			case <-monitor.expireLockDone:
@@ -74,6 +76,8 @@ func (monitor *JobMonitorHandle) failJobScan() {
 
 func (monitor *JobMonitorHandle) timeoutScan() {
 	go func() {
+		//sleep 30s,wait job execute
+		time.Sleep(time.Second * 30)
 		for {
 			select {
 			case <-monitor.timeoutDone:

@@ -38,6 +38,8 @@ func (job *jobTriggerHandle) Flush() {
 
 func (job *jobTriggerHandle) start() {
 	go func() {
+		//sleep 10s,wait work register
+		time.Sleep(time.Second * 10)
 		for {
 			var timer *time.Timer
 			if JobManagerProcessor.Permission() {

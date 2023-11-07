@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"google.golang.org/protobuf/types/known/emptypb"
+	"log"
 )
 
 type JobService struct {
@@ -21,6 +22,7 @@ func NewJobService() *JobService {
 }
 
 func (job *JobService) Callback(ctx context.Context, resp *to.CallbackResponse) (*emptypb.Empty, error) {
+
 	var jobLog do.JobLogDo
 	orm.DB.First(&jobLog, resp.GetId())
 	if jobLog.Id == 0 {
@@ -31,6 +33,11 @@ func (job *JobService) Callback(ctx context.Context, resp *to.CallbackResponse) 
 }
 
 func (job *JobService) callback(jobLog *do.JobLogDo, resp *to.CallbackResponse) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println("操作出现异常:", err)
+		}
+	}()
 	//解锁
 	job.Unlock(jobLog.JobId)
 	var jobInfo do.JobInfoDo
