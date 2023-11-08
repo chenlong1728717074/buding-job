@@ -1,4 +1,6 @@
-# <div style="text-align:center;"> <h1>buding-job(进行中)<h1></div>
+<div style="text-align:center;"> 
+<h1>buding-job(进行中)</h1>
+</div>
 
 <div style="text-align:center;">
 <h2>简介</h2>
@@ -20,9 +22,6 @@
 <p>提供重试/超时/故障转移等多种功能</p>
 
 </div>
-
-
-
 
  #### 同类产品对比
 |        | QuartZ                         | xxl-job                            | BuDing-job                          |
