@@ -51,10 +51,23 @@ func (h *JobManagerHandle) Start() {
 	h.serverInspect()
 }
 
-func (h *JobManagerHandle) GetJobList() []*core.Scheduler {
+func (h *JobManagerHandle) GetSchedulerList() []*core.Scheduler {
 	h.jobLock.Lock()
 	defer h.jobLock.Unlock()
 	return h.jobList
+}
+func (h *JobManagerHandle) GetScheduler(id int64) *core.Scheduler {
+	if id == 0 {
+		return nil
+	}
+	h.jobLock.Lock()
+	defer h.jobLock.Unlock()
+	for _, value := range h.jobList {
+		if value.Id == id {
+			return value
+		}
+	}
+	return nil
 }
 
 func (h *JobManagerHandle) Permission() bool {

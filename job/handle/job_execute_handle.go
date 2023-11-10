@@ -49,6 +49,47 @@ func (jobExecute *jobExecuteHandle) Execute(job *core.Scheduler, triggerType boo
 	jobExecute.dispatchClustering(job, triggerType)
 }
 
+// Execute 执行逻辑
+func (jobExecute *jobExecuteHandle) ExecuteByLog(jobLog *do.JobLogDo) {
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println("执行出错,原因是:", err)
+		}
+	}()
+	var jobInfo *do.JobInfoDo
+	orm.DB.Model(&do.JobInfoDo{}).Where("id=?", jobLog.JobId).Find(jobInfo)
+	if jobInfo.Id == 0 || !jobInfo.Enable {
+		jobLog.DispatchRemake = "任务关闭/删除,无需重试"
+		jobLog.ProcessingStatus = constant.NoProcessingRequired
+		orm.DB.Updates(jobLog)
+		return
+	}
+	scheduler := JobManagerProcessor.GetScheduler(jobLog.JobId)
+	if scheduler == nil || scheduler.Id == 0 {
+		log.Println("task not loaded[this is a serious error]")
+		jobLog.DispatchRemake = "任务没有被正确加载,请联系开发者或者重启服务"
+		jobLog.ProcessingStatus = constant.NoProcessingRequired
+		orm.DB.Updates(jobLog)
+		return
+	}
+	//没有服务注册上去,不允许执行
+	if !scheduler.Manager.Permission() {
+		jobLog.DispatchRemake = "该任务所在的任务管理器没有加载,进行重试"
+		jobLog.Retry = jobLog.Retry + 1
+		jobLog.ProcessingStatus = constant.Retry
+		orm.DB.Updates(jobLog)
+		return
+	}
+	//以上校验都通过,即可以进行重试
+	jobLog.Retry = jobLog.Retry + 1
+	if scheduler.ExecuteType == 1 {
+		//lock, allow := jobExecute.permission(scheduler)
+		//jobExecute.dispatchBroadcast(scheduler, false)
+		return
+	}
+	jobExecute.dispatchClustering(scheduler, false)
+}
+
 // 集群模式下路由调用
 func (jobExecute *jobExecuteHandle) dispatchBroadcast(job *core.Scheduler, triggerType bool) {
 	lock, allow := jobExecute.permission(job)

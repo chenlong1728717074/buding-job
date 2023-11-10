@@ -37,15 +37,21 @@ func (job *jobTriggerHandle) Flush() {
 }
 
 func (job *jobTriggerHandle) start() {
+	job.trigger()
+}
+
+func (job *jobTriggerHandle) trigger() {
 	go func() {
 		//sleep 10s,wait work register
 		time.Sleep(time.Second * 10)
 		for {
 			var timer *time.Timer
+			//flush sort
+			JobManagerProcessor.flushSchedulerSort()
 			if JobManagerProcessor.Permission() {
 				timer = time.NewTimer(100000 * time.Hour)
 			} else {
-				timer = time.NewTimer(JobManagerProcessor.GetJobList()[0].NextTime.Sub(time.Now()))
+				timer = time.NewTimer(JobManagerProcessor.GetSchedulerList()[0].NextTime.Sub(time.Now()))
 			}
 			for {
 				select {
@@ -58,7 +64,7 @@ func (job *jobTriggerHandle) start() {
 				case <-timer.C:
 					//XXX 优化后续这一步骤可以加入时间轮而非直接执行
 					start := time.Now()
-					list := JobManagerProcessor.GetJobList()
+					list := JobManagerProcessor.GetSchedulerList()
 					for _, c := range list {
 						if c.NextTime.After(start) || c.NextTime.IsZero() {
 							break

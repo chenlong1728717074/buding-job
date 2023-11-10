@@ -71,7 +71,19 @@ func (monitor *JobMonitorHandle) deleteExpireLock() {
 }
 
 func (monitor *JobMonitorHandle) failJobScan() {
-
+	go func() {
+		//sleep 30s,wait job execute
+		time.Sleep(time.Second * 30)
+		for {
+			select {
+			case <-monitor.timeoutDone:
+				return
+			default:
+				monitor.failJob()
+				time.Sleep(time.Second * 30)
+			}
+		}
+	}()
 }
 
 func (monitor *JobMonitorHandle) timeoutScan() {
@@ -144,5 +156,13 @@ func (monitor *JobMonitorHandle) alarm(jobLog *do.JobLogDo, author string, email
 	status := alarm.Mail.CommonAlarm(author, email, "", "")
 	if status {
 		jobLog.ProcessingStatus = constant.WarnedSuccess
+	}
+}
+
+func (monitor *JobMonitorHandle) failJob() {
+	var logs []do.JobLogDo
+	orm.DB.Model(&do.JobLogDo{}).Where("processing_status=?", 2).Find(&logs)
+	for _, value := range logs {
+		JobExecute.ExecuteByLog(&value)
 	}
 }
