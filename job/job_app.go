@@ -25,7 +25,9 @@ func (app *JobApp) Start() {
 	handle.JobSchedule.Start()
 	handle.JobMonitor.Start()
 	app.registerServer()
+	handle.JobFsm.InitRaftNode(app.grpcServer)
 	app.startGrpc()
+	handle.JobFsm.Start()
 }
 
 func (app *JobApp) startGrpc() {

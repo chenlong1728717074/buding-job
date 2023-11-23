@@ -53,11 +53,11 @@ func (jobExecute *jobExecuteHandle) Execute(job *core.Scheduler, triggerType boo
 func (jobExecute *jobExecuteHandle) ExecuteByLog(jobLog *do.JobLogDo) {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Println("执行出错,原因是:", err)
+			log.Println("重试任务执行出错,原因是:", err)
 		}
 	}()
-	var jobInfo *do.JobInfoDo
-	orm.DB.Model(&do.JobInfoDo{}).Where("id=?", jobLog.JobId).Find(jobInfo)
+	var jobInfo do.JobInfoDo
+	orm.DB.First(&jobInfo, jobLog.JobId)
 	if jobInfo.Id == 0 || !jobInfo.Enable {
 		jobLog.DispatchRemake = "任务关闭/删除,无需重试"
 		jobLog.ProcessingStatus = constant.NoProcessingRequired
@@ -74,7 +74,7 @@ func (jobExecute *jobExecuteHandle) ExecuteByLog(jobLog *do.JobLogDo) {
 	}
 	//没有服务注册上去,不允许执行
 	if !scheduler.Manager.Permission() {
-		jobLog.DispatchRemake = "该任务所在的任务管理器没有加载,进行重试"
+		jobLog.DispatchRemake = "该任务所在的任务管理器没有注册,无法进行重试"
 		jobLog.Retry = jobLog.Retry + 1
 		jobLog.ProcessingStatus = constant.Retry
 		orm.DB.Updates(jobLog)

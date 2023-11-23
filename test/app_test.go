@@ -2,6 +2,8 @@ package test
 
 import (
 	"buding-job/common/utils"
+	"buding-job/orm"
+	"buding-job/orm/do"
 	"fmt"
 	"github.com/gorhill/cronexpr"
 	"github.com/jordan-wright/email"
@@ -49,12 +51,10 @@ func TestDelete(t *testing.T) {
 }
 
 func TestSelect(t *testing.T) {
-	//var jobLogs []bo.JobTimeoutBo
-	//orm.DB.Raw(constant.TimeoutJob).Scan(&jobLogs)
-	//for _, value := range jobLogs {
-	//	fmt.Println(value.Email)
-	//	fmt.Println(value.JobLogDo)
-	//}
+	var jobInfo do.JobInfoDo
+	if tx := orm.DB.Where("id = ?", 280841834440704).First(&jobInfo); tx.Error != nil {
+		panic(tx.Error)
+	}
 }
 func TestEmaiil(t *testing.T) {
 	e := email.NewEmail()
