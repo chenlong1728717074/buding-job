@@ -59,6 +59,7 @@ func (fsm *JobFsmHandle) GetKv() map[string]string {
 func (fsm *JobFsmHandle) InitRaftNode(server *grpc.Server) {
 	config := raft.DefaultConfig()
 	config.LocalID = raft.ServerID("localhost:8082") // 设置本地节点的唯一标识
+	config.Logger = core.NewRaftLog()
 	node, err := NodeRaftNode(config, fsm, server)
 	if err != nil {
 		panic(err)

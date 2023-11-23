@@ -67,7 +67,7 @@ func (monitor *JobMonitorHandle) deleteExpireLock() {
 	if tx.Error != nil {
 		panic(tx.Error)
 	}
-	log.GetLog().Errorln("expire key scan complete,delete total:", tx.RowsAffected)
+	log.GetLog().Infoln("expire key scan complete,delete total:", tx.RowsAffected)
 }
 
 func (monitor *JobMonitorHandle) failJobScan() {
