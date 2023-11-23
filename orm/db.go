@@ -1,6 +1,7 @@
 package orm
 
 import (
+	"buding-job/common/log"
 	"errors"
 	"fmt"
 	"gorm.io/driver/clickhouse"
@@ -10,8 +11,6 @@ import (
 	"gorm.io/driver/sqlserver"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"log"
-	"os"
 	"time"
 )
 
@@ -73,7 +72,7 @@ func dataSource(config dbConfig) (gorm.Dialector, error) {
 }
 func getLogger() logger.Interface {
 	return logger.New(
-		log.New(os.Stdout, "\r\n", log.LstdFlags), // io writer（日志输出的目标，前缀和日志包含的内容——译者注）
+		log.GetLog(), // io writer（日志输出的目标，前缀和日志包含的内容——译者注）
 		logger.Config{
 			SlowThreshold:             time.Second, // 慢 SQL 阈值
 			LogLevel:                  logger.Info, // 日志级别
