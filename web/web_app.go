@@ -1,11 +1,11 @@
 package web
 
 import (
+	"buding-job/common/log"
 	"buding-job/web/api"
 	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
-	"log"
 	"net/http"
 )
 
@@ -15,8 +15,12 @@ type WebApp struct {
 }
 
 func NewWebApp() *WebApp {
+	// 设置 Gin 使用 logrus 的日志库
+	gin.DefaultWriter = log.GetLog().Writer()
+	gin.DefaultErrorWriter = log.GetLog().Writer()
+	engine := gin.Default()
 	return &WebApp{
-		engine: gin.Default(),
+		engine: engine,
 	}
 }
 func (app *WebApp) Start() {
@@ -28,14 +32,14 @@ func (app *WebApp) Start() {
 	app.router()
 	go func() {
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("listen: %s\n", err)
+			log.GetLog().Fatalf("listen: %s\n", err)
 		}
 	}()
 	app.server = server
 }
 func (app *WebApp) Stop(ctx context.Context) {
 	if err := app.server.Shutdown(ctx); err != nil {
-		log.Println("Server Shutdown err:", err)
+		log.GetLog().Println("Server Shutdown err:", err)
 	}
 }
 
