@@ -2,6 +2,7 @@ package service
 
 import (
 	"buding-job/common/constant"
+	"buding-job/common/log"
 	"buding-job/common/utils"
 	"buding-job/job/alarm"
 	"buding-job/job/grpc/to"
@@ -10,7 +11,6 @@ import (
 	"context"
 	"errors"
 	"google.golang.org/protobuf/types/known/emptypb"
-	"log"
 )
 
 type JobService struct {
@@ -35,7 +35,7 @@ func (job *JobService) Callback(ctx context.Context, resp *to.CallbackResponse) 
 func (job *JobService) callback(jobLog *do.JobLogDo, resp *to.CallbackResponse) {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Println("操作出现异常:", err)
+			log.GetLog().Errorln("操作出现异常:", err)
 		}
 	}()
 	//解锁

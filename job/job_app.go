@@ -1,12 +1,12 @@
 package job
 
 import (
+	"buding-job/common/log"
 	"buding-job/job/grpc/service"
 	"buding-job/job/grpc/to"
 	"buding-job/job/handle"
 	"fmt"
 	"google.golang.org/grpc"
-	"log"
 	"net"
 )
 
@@ -38,10 +38,10 @@ func (app *JobApp) startGrpc() {
 	go func() {
 		err := app.grpcServer.Serve(lis)
 		if err != nil {
-			log.Fatalf("Grpc Service startup failed:%s", err.Error())
+			log.GetLog().Fatalf("Grpc Service startup failed:%s\n", err.Error())
 		}
 	}()
-	log.Println("Grpc server startup...")
+	log.GetLog().Infoln("Grpc server startup...")
 }
 func (app *JobApp) Stop() {
 	app.grpcServer.Stop()

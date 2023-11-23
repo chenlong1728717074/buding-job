@@ -1,9 +1,9 @@
 package alarm
 
 import (
+	"buding-job/common/log"
 	"fmt"
 	"github.com/jordan-wright/email"
-	"log"
 	"net/smtp"
 	"time"
 )
@@ -29,7 +29,7 @@ func NewMailAlarm() *MailAlarm {
 	)
 
 	if err != nil {
-		log.Fatal("failed to create pool:", err)
+		log.GetLog().Fatal("failed to create pool:", err)
 	}
 
 	return &MailAlarm{

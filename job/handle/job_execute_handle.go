@@ -2,6 +2,7 @@ package handle
 
 import (
 	"buding-job/common/constant"
+	"buding-job/common/log"
 	"buding-job/job/core"
 	"buding-job/job/grpc/to"
 	"buding-job/orm"
@@ -10,7 +11,6 @@ import (
 	"fmt"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"log"
 	"sync"
 	"time"
 )
@@ -35,7 +35,7 @@ func NewJobExecuteHandle() *jobExecuteHandle {
 func (jobExecute *jobExecuteHandle) Execute(job *core.Scheduler, triggerType bool) {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Println("执行出错,原因是:", err)
+			log.GetLog().Errorln("执行出错,原因是:", err)
 		}
 	}()
 	//没有服务注册上去,不允许执行
@@ -53,7 +53,7 @@ func (jobExecute *jobExecuteHandle) Execute(job *core.Scheduler, triggerType boo
 func (jobExecute *jobExecuteHandle) ExecuteByLog(jobLog *do.JobLogDo) {
 	defer func() {
 		if err := recover(); err != nil {
-			log.Println("重试任务执行出错,原因是:", err)
+			log.GetLog().Errorln("重试任务执行出错,原因是:", err)
 		}
 	}()
 	var jobInfo do.JobInfoDo
@@ -66,7 +66,7 @@ func (jobExecute *jobExecuteHandle) ExecuteByLog(jobLog *do.JobLogDo) {
 	}
 	scheduler := JobManagerProcessor.GetScheduler(jobLog.JobId)
 	if scheduler == nil || scheduler.Id == 0 {
-		log.Println("task not loaded[this is a serious error]")
+		log.GetLog().Infoln("task not loaded[this is a serious error]")
 		jobLog.DispatchRemake = "任务没有被正确加载,请联系开发者或者重启服务"
 		jobLog.ProcessingStatus = constant.NoProcessingRequired
 		orm.DB.Updates(jobLog)
@@ -195,7 +195,7 @@ func (jobExecute *jobExecuteHandle) createLog(job *core.Scheduler, schedule bool
 	}
 	tx := orm.DB.Create(logDo)
 	if tx.RowsAffected == 0 || tx.Error != nil {
-		log.Println("log insert fail")
+		log.GetLog().Infoln("log insert fail")
 		panic(tx.Error)
 	}
 	return logDo

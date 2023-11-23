@@ -1,9 +1,8 @@
 package cmd
 
 import (
-	"fmt"
+	"buding-job/common/log"
 	"github.com/spf13/cobra"
-	"os"
 	"os/exec"
 )
 
@@ -17,6 +16,5 @@ func ExecuteCommand(name string, subname string, args ...string) (string, error)
 }
 
 func Error(cmd *cobra.Command, args []string, err error) {
-	fmt.Fprintf(os.Stderr, "execute %s args:%v error:%v\n", cmd.Name(), args, err)
-	os.Exit(1)
+	log.GetLog().Fatalf("execute %s args:%v error:%v\n", cmd.Name(), args, err)
 }

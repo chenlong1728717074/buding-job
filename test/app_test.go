@@ -1,6 +1,7 @@
 package test
 
 import (
+	"buding-job/common/log"
 	"buding-job/common/utils"
 	"buding-job/orm"
 	"buding-job/orm/do"
@@ -8,7 +9,6 @@ import (
 	"github.com/gorhill/cronexpr"
 	"github.com/jordan-wright/email"
 	"github.com/shirou/gopsutil/mem"
-	"log"
 	"net/smtp"
 	"runtime"
 	"testing"
@@ -66,7 +66,7 @@ func TestEmaiil(t *testing.T) {
 	err := e.Send("smtp.qq.com:587", smtp.PlainAuth("", "1728717074@qq.com",
 		"xalbdtmrqtlzccei", "smtp.qq.com"))
 	if err != nil {
-		log.Fatal(err)
+		log.GetLog().Fatalln(err)
 	}
 }
 func TestOs(t *testing.T) {

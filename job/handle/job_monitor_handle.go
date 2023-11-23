@@ -2,12 +2,12 @@ package handle
 
 import (
 	"buding-job/common/constant"
+	"buding-job/common/log"
 	"buding-job/common/utils"
 	"buding-job/job/alarm"
 	"buding-job/orm"
 	"buding-job/orm/bo"
 	"buding-job/orm/do"
-	"log"
 	"time"
 )
 
@@ -67,7 +67,7 @@ func (monitor *JobMonitorHandle) deleteExpireLock() {
 	if tx.Error != nil {
 		panic(tx.Error)
 	}
-	log.Println("expire key scan complete,delete total:", tx.RowsAffected)
+	log.GetLog().Errorln("expire key scan complete,delete total:", tx.RowsAffected)
 }
 
 func (monitor *JobMonitorHandle) failJobScan() {

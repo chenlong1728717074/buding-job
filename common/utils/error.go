@@ -1,9 +1,9 @@
 package utils
 
-import "log"
+import "buding-job/common/log"
 
 func Recover(msg string) {
 	if err := recover(); err != nil {
-		log.Println(msg, ":", err)
+		log.GetLog().Error(msg, ":", err)
 	}
 }

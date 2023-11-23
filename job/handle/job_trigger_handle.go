@@ -1,7 +1,7 @@
 package handle
 
 import (
-	"log"
+	"buding-job/common/log"
 	"sync"
 	"time"
 )
@@ -76,7 +76,7 @@ func (job *jobTriggerHandle) trigger() {
 					end := time.Now()
 					consum := end.UnixMilli() - start.UnixMilli()
 
-					log.Println("本次执行耗时", consum, "ms---->", "任务大小->", len(list))
+					log.GetLog().Debugln("本次执行耗时", consum, "ms---->", "任务大小->", len(list))
 					JobManagerProcessor.flushSchedulerSort()
 					break
 				}

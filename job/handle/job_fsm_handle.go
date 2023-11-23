@@ -2,6 +2,7 @@ package handle
 
 import (
 	"buding-job/common/constant"
+	"buding-job/common/log"
 	"buding-job/job/core"
 	"encoding/json"
 	transport "github.com/Jille/raft-grpc-transport"
@@ -9,7 +10,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"io"
-	"log"
 	"sync"
 )
 
@@ -80,7 +80,7 @@ func (fsm *JobFsmHandle) SetStatus(status int) {
 func (fsm *JobFsmHandle) Start() {
 	go func() {
 		if err := fsm.raftNode.BootstrapCluster(raft.Configuration{Servers: []raft.Server{{ID: "localhost:8082", Address: "localhost:8082"}}}).Error(); err != nil {
-			log.Fatalf("Error bootstrapping Raft cluster: %v", err)
+			log.GetLog().Fatalf("Error bootstrapping Raft cluster: %v\n", err)
 		} else {
 			fsm.status = 1
 		}
@@ -93,7 +93,7 @@ func (fsm *JobFsmHandle) Apply(logEntry *raft.Log) interface{} {
 	fsm.lock.Unlock()
 	cmd := &core.Command{}
 	if err := json.Unmarshal(logEntry.Data, cmd); err != nil {
-		log.Fatalf("Failed to unmarshal command: %v", err)
+		log.GetLog().Errorln("Failed to unmarshal command: %v\n", err)
 	}
 	if cmd.Cmd == constant.Put {
 		fsm.kvStore[cmd.Key] = cmd.Value

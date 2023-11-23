@@ -2,11 +2,11 @@ package handle
 
 import (
 	"buding-job/common/constant"
+	"buding-job/common/log"
 	"buding-job/common/utils"
 	"buding-job/job/core"
 	"buding-job/orm"
 	"buding-job/orm/do"
-	"log"
 	"sort"
 	"sync"
 	"time"
@@ -79,7 +79,7 @@ func (h *JobManagerHandle) Permission() bool {
 func (h *JobManagerHandle) init() {
 	//todo 这一步操作可以不需要,是为了项目初期调试防止关闭服务来不及删除锁的额外操作
 	if err := orm.DB.Exec(constant.DeleteLock).Error; err != nil {
-		log.Fatal("Failed to delete data: ", err)
+		log.GetLog().Fatalln("Failed to delete data: ", err)
 	}
 	//加载任务管理器
 	var managers []do.JobManagementDo
@@ -87,7 +87,7 @@ func (h *JobManagerHandle) init() {
 	//加载任务
 	h.loadJob(managers)
 	h.flushSchedulerSort()
-	log.Printf("任务管理器加载成功,size=%d\n", len(h.jobManagerMap))
+	log.GetLog().Debugf("任务管理器加载成功,size=%d\n", len(h.jobManagerMap))
 }
 
 func (h *JobManagerHandle) loadJob(managers []do.JobManagementDo) {
@@ -175,7 +175,7 @@ func (h *JobManagerHandle) RegisterInstance(instance *core.Instance) {
 	if flag {
 		h.addInstance(instance)
 	}
-	log.Printf("registration from[%s]has been refreshed\n", instance.Addr)
+	log.GetLog().Debugf("registration from[%s]has been refreshed\n", instance.Addr)
 }
 
 func (h *JobManagerHandle) addInstance(instance *core.Instance) {
@@ -203,13 +203,13 @@ func (h *JobManagerHandle) RemoveInstance(instance *core.Instance) {
 
 func (h *JobManagerHandle) serverInspect() {
 	go func() {
-		log.Println("服务检查处理器已开启")
+		log.GetLog().Infoln("服务检查处理器已开启")
 		//睡十秒,等待服务注册
 		time.Sleep(time.Second * 10)
 		for {
 			select {
 			case <-h.flushDone:
-				log.Println("服务检查处理器已关闭....")
+				log.GetLog().Infoln("服务检查处理器已关闭....")
 				return
 			default:
 				go h.flushInstance()
@@ -223,7 +223,7 @@ func (h *JobManagerHandle) flushInstance() {
 	h.instanceLock.RLock()
 	defer h.instanceLock.RUnlock()
 	startTime := time.Now().UnixNano() / 1000000
-	log.Printf("start scrubbing service node[刷新服务]:%d\n", startTime)
+	log.GetLog().Infof("start scrubbing service node[刷新服务]:%d\n", startTime)
 	now := time.Now().Add(-time.Second * 90)
 	newInstanceList := make([]*core.Instance, 0)
 	//获取所有存活的服务
@@ -251,5 +251,5 @@ func (h *JobManagerHandle) flushInstance() {
 		}
 	}
 	endTime := time.Now().UnixNano() / 1000000
-	log.Printf("service node refresh completed[刷新完成]:%d,time consuming:%d,此次执行共刷新%d个实例", endTime, endTime-startTime, len(h.instanceList))
+	log.GetLog().Debugf("service node refresh completed[刷新完成]:%d,time consuming:%d,此次执行共刷新%d个实例\n", endTime, endTime-startTime, len(h.instanceList))
 }
